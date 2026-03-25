@@ -5,10 +5,12 @@ from datetime import datetime
 db = SQLAlchemy()
 
 class User(UserMixin, db.Model):
+    __tablename__ = 'users'          # ← Esta línea es la clave
+
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(50), unique=True, nullable=False)
     password = db.Column(db.String(200), nullable=False)
-    role = db.Column(db.String(20), default='operador') # 'admin' o 'operador'
+    role = db.Column(db.String(20), default='operador')
 
 class Alumno(db.Model):
     id = db.Column(db.Integer, primary_key=True)
