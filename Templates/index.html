@@ -1,0 +1,45 @@
+{% extends "base.html" %} <!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="bg-gray-900 text-white font-sans">
+    <div class="flex h-screen">
+        <main class="flex-1 p-8 overflow-y-auto">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                
+                <div class="bg-gray-800 p-6 rounded-xl border border-gray-700">
+                    <h3 class="text-xl font-bold mb-4 flex items-center text-blue-400">
+                        <i data-lucide="user-check" class="mr-2"></i> Ingreso de Alumnos
+                    </h3>
+                    <form action="/asistencia" method="POST" class="flex space-x-2">
+                        <input type="text" name="dni" placeholder="Últimos 3 del DNI" maxlength="3" class="flex-1 bg-gray-900 border border-gray-700 rounded p-3 text-2xl text-center font-mono">
+                        <button type="submit" class="bg-blue-600 px-6 rounded font-bold hover:bg-blue-500 transition">OK</button>
+                    </form>
+                    <p class="mt-2 text-xs text-gray-500 italic text-center">También podés usar el lector QR aquí.</p>
+                </div>
+
+                <div class="bg-gray-800 p-6 rounded-xl border border-gray-700">
+                    <h3 class="text-xl font-bold mb-4 flex items-center text-green-400">
+                        <i data-lucide="shopping-cart" class="mr-2"></i> Venta Rápida
+                    </h3>
+                    <form action="/venta" method="POST" class="grid grid-cols-2 gap-2">
+                        <input type="text" name="producto" placeholder="Producto/Bebida" class="bg-gray-900 border border-gray-700 rounded p-2">
+                        <input type="number" name="precio" placeholder="Monto $" class="bg-gray-900 border border-gray-700 rounded p-2">
+                        <button type="submit" class="col-span-2 bg-green-600 py-2 rounded font-bold hover:bg-green-500">Registrar Venta</button>
+                    </form>
+                </div>
+
+            </div>
+
+            <div class="mt-8">
+                 <canvas id="myChart" class="bg-gray-800 p-4 rounded-xl border border-gray-700"></canvas>
+            </div>
+        </main>
+    </div>
+    <script>lucide.createIcons();</script>
+</body>
+</html>
