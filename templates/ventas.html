@@ -1,186 +1,100 @@
 {% extends "base.html" %}
-{% block title %}Ventas — Box Gym{% endblock %}
+{% block title %}Ventas{% endblock %}
 
 {% block content %}
-<a href="{{ url_for('index') }}" class="back-link">
-    <i class="fas fa-arrow-left"></i> Volver al Dashboard
-</a>
-
-<div class="page-header">
-    <h2>Control de Ventas</h2>
-    <p>Registrá ventas y consultá el historial completo.</p>
-</div>
-
-<div class="grid-4" style="margin-bottom: 24px;">
-    <div class="stat-card">
-        <div class="stat-label">Ventas Hoy</div>
-        <div class="stat-value" style="color: var(--accent-green);">${{ "%.0f"|format(totales.hoy) }}</div>
-        <div class="stat-sub">{{ cant.hoy }} transacciones</div>
-    </div>
-    <div class="stat-card">
-        <div class="stat-label">Esta Semana</div>
-        <div class="stat-value" style="color: var(--accent-blue);">${{ "%.0f"|format(totales.semana) }}</div>
-        <div class="stat-sub">{{ cant.semana }} transacciones</div>
-    </div>
-    <div class="stat-card">
-        <div class="stat-label">Este Mes</div>
-        <div class="stat-value" style="color: var(--accent-yellow);">${{ "%.0f"|format(totales.mes) }}</div>
-        <div class="stat-sub">{{ cant.mes }} transacciones</div>
-    </div>
-    <div class="stat-card">
-        <div class="stat-label">Total Histórico</div>
-        <div class="stat-value" style="color: var(--accent-red);">${{ "%.0f"|format(totales.total) }}</div>
-        <div class="stat-sub">{{ cant.total }} ventas</div>
-    </div>
-</div>
-
-<div class="grid-2">
-    <!-- FORM NUEVA VENTA -->
-    <div class="card" style="align-self: start;">
-        <div class="card-title" style="margin-bottom: 20px;">
-            <i class="fas fa-plus-circle" style="color: var(--accent-green)"></i>
-            Nueva Venta
-        </div>
-
-        <form method="POST" action="{{ url_for('venta') }}">
-            <div class="form-group">
-                <label class="form-label">Categoría</label>
-                <select name="categoria" id="categoriaSelect" class="form-control" onchange="updateProductos()">
-                    <option value="">— Seleccionar categoría —</option>
-                    <option value="bebidas">Bebidas</option>
-                    <option value="equipamiento">Equipamiento</option>
-                    <option value="cuotas">Cuotas</option>
-                    <option value="otro">Otro</option>
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <!-- Registrar Venta -->
+    <div class="bg-white rounded-xl shadow-lg p-6">
+        <h3 class="text-lg font-bold text-gray-800 mb-4">Registrar Venta</h3>
+        <form method="POST" action="{{ url_for('registrar_venta') }}">
+            <div class="mb-4">
+                <label class="block text-gray-700 mb-2">Producto</label>
+                <select name="producto_id" required class="w-full p-3 border border-gray-300 rounded-lg">
+                    <option value="">Seleccionar producto</option>
+                    {% for p in productos %}
+                    <option value="{{ p.id }}">{{ p.nombre }} - ${{ p.precio }} (Stock: {{ p.stock }})</option>
+                    {% endfor %}
                 </select>
             </div>
-
-            <div class="form-group">
-                <label class="form-label">Producto / Servicio *</label>
-                <input type="text" name="producto" id="productoInput" class="form-control" placeholder="Nombre del producto" required list="productosDatalist">
-                <datalist id="productosDatalist">
-                    <option value="Agua mineral">
-                    <option value="Isotónico">
-                    <option value="Proteína">
-                    <option value="Energizante">
-                    <option value="Guantes de boxeo">
-                    <option value="Vendas">
-                    <option value="Protector bucal">
-                    <option value="Cuerda de saltar">
-                    <option value="Cuota mensual">
-                    <option value="Cuota quincenal">
-                    <option value="Clase suelta">
-                </datalist>
+            <div class="mb-4">
+                <label class="block text-gray-700 mb-2">Cantidad</label>
+                <input type="number" name="cantidad" value="1" min="1" required class="w-full p-3 border border-gray-300 rounded-lg">
             </div>
-
-            <div class="form-group">
-                <label class="form-label">Monto ($) *</label>
-                <input type="number" name="precio" id="precioInput" class="form-control"
-                       placeholder="0.00" step="0.01" min="0" required
-                       style="font-size: 24px; font-weight: 700; text-align: right;">
-            </div>
-
-            <button type="submit" class="btn btn-success" style="width: 100%; padding: 13px; font-size: 15px;">
-                <i class="fas fa-check-circle"></i> Registrar Venta
+            <button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white py-3 rounded-lg transition">
+                <i class="fas fa-cart-plus mr-2"></i> Registrar Venta
             </button>
         </form>
     </div>
-
-    <!-- HISTORIAL -->
-    <div class="card">
-        <div class="card-header">
-            <div class="card-title">
-                <i class="fas fa-history" style="color: var(--text-muted)"></i>
-                Últimas Ventas
+    
+    <!-- Agregar Producto -->
+    {% if current_user.role == 'admin' %}
+    <div class="bg-white rounded-xl shadow-lg p-6">
+        <h3 class="text-lg font-bold text-gray-800 mb-4">Agregar Producto</h3>
+        <form method="POST" action="{{ url_for('nuevo_producto') }}">
+            <div class="grid grid-cols-2 gap-4 mb-4">
+                <input type="text" name="nombre" placeholder="Nombre" required class="p-3 border border-gray-300 rounded-lg">
+                <input type="number" name="precio" placeholder="Precio" step="0.01" required class="p-3 border border-gray-300 rounded-lg">
+                <input type="number" name="stock" placeholder="Stock" value="0" class="p-3 border border-gray-300 rounded-lg">
+                <select name="categoria" class="p-3 border border-gray-300 rounded-lg">
+                    <option value="">Categoría</option>
+                    <option>Bebidas</option><option>Equipamiento</option><option>Suplementos</option><option>Alimentos</option>
+                </select>
             </div>
-            <select class="form-control" id="filterPeriodo" style="width: auto;" onchange="filterVentas()">
-                <option value="all">Todo</option>
-                <option value="hoy" selected>Hoy</option>
-                <option value="semana">Esta semana</option>
-            </select>
-        </div>
+            <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg transition">
+                <i class="fas fa-plus mr-2"></i> Agregar Producto
+            </button>
+        </form>
+    </div>
+    {% endif %}
+</div>
 
-        {% if ventas %}
-        <div class="table-wrapper">
-            <table>
-                <thead>
-                    <tr>
-                        <th>Producto</th>
-                        <th>Fecha</th>
-                        <th style="text-align:right;">Monto</th>
-                        <th></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for v in ventas %}
-                    <tr>
-                        <td>
-                            <div style="font-weight: 600;">{{ v.item }}</div>
-                            <div style="font-size: 11px; color: var(--text-muted);">{{ v.tipo|title }}</div>
-                        </td>
-                        <td style="color: var(--text-muted); font-size: 13px;">
-                            {{ v.fecha.strftime('%d/%m/%Y') }}<br>
-                            <span style="font-size: 11px;">{{ v.fecha.strftime('%H:%M') }}</span>
-                        </td>
-                        <td style="text-align:right; font-weight: 700; color: var(--accent-green); font-size: 15px;">
-                            ${{ "%.0f"|format(v.monto) }}
-                        </td>
-                        <td>
-                            <button class="btn btn-danger-outline btn-sm"
-                                onclick="confirmAction(
-                                    '{{ url_for('eliminar_transaccion', id=v.id) }}',
-                                    'Eliminar venta',
-                                    '¿Eliminar la venta de ${{ "%.0f"|format(v.monto) }}?'
-                                )">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-        {% else %}
-        <div class="empty-state">
-            <i class="fas fa-shopping-cart"></i>
-            <h3>Sin ventas registradas</h3>
-            <p>Las ventas aparecerán aquí</p>
-        </div>
-        {% endif %}
+<!-- Lista de Productos -->
+<div class="mt-8 bg-white rounded-xl shadow-lg p-6">
+    <h3 class="text-lg font-bold text-gray-800 mb-4">Productos</h3>
+    <div class="overflow-x-auto">
+        <table class="w-full">
+            <thead class="bg-gray-50">
+                <tr><th class="px-4 py-3 text-left">Producto</th><th>Categoría</th><th>Precio</th><th>Stock</th><th></th></tr>
+            </thead>
+            <tbody>
+                {% for p in productos %}
+                <tr class="border-t">
+                    <td class="px-4 py-3">{{ p.nombre }}</td>
+                    <td class="px-4 py-3">{{ p.categoria or '-' }}</td>
+                    <td class="px-4 py-3">${{ p.precio }}</td>
+                    <td class="px-4 py-3">{{ p.stock }}</td>
+                    <td class="px-4 py-3">
+                        {% if current_user.role == 'admin' %}
+                        <a href="{{ url_for('eliminar_producto', id=p.id) }}" class="text-red-600" onclick="return confirm('¿Eliminar?')">Eliminar</a>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
 </div>
 
-<!-- PRECIOS RÁPIDOS -->
-<div class="card" style="margin-top: 20px;">
-    <div class="card-title" style="margin-bottom: 16px;">
-        <i class="fas fa-bolt" style="color: var(--accent-yellow)"></i>
-        Productos Frecuentes — Clic para autocompletar
-    </div>
-    <div style="display: flex; flex-wrap: wrap; gap: 10px;">
-        {% set productos_rapidos = [
-            ('Agua mineral', 500),
-            ('Isotónico', 1200),
-            ('Proteína', 2500),
-            ('Guantes de boxeo', 8000),
-            ('Cuota mensual', 15000),
-            ('Cuota quincenal', 8000),
-            ('Clase suelta', 3000),
-            ('Vendas', 2000),
-        ] %}
-        {% for nombre, precio in productos_rapidos %}
-        <button class="btn btn-outline" onclick="setProducto('{{ nombre }}', {{ precio }})">
-            {{ nombre }} — ${{ precio }}
-        </button>
-        {% endfor %}
+<!-- Últimas Ventas -->
+<div class="mt-8 bg-white rounded-xl shadow-lg p-6">
+    <h3 class="text-lg font-bold text-gray-800 mb-4">Últimas Ventas</h3>
+    <div class="overflow-x-auto">
+        <table class="w-full">
+            <thead class="bg-gray-50">
+                <tr><th class="px-4 py-3 text-left">Fecha</th><th>Producto</th><th>Cantidad</th><th>Monto</th><th>Vendedor</th></tr>
+            </thead>
+            <tbody>
+                {% for v in ventas %}
+                <tr class="border-t">
+                    <td class="px-4 py-3">{{ v.fecha.strftime('%d/%m/%Y %H:%M') }}</td>
+                    <td class="px-4 py-3">{{ v.producto_nombre }}</td>
+                    <td class="px-4 py-3">{{ v.cantidad }}</td>
+                    <td class="px-4 py-3">${{ v.monto }}</td>
+                    <td class="px-4 py-3">{{ v.usuario.username if v.usuario else '-' }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
 </div>
-{% endblock %}
-
-{% block extra_scripts %}
-<script>
-function setProducto(nombre, precio) {
-    document.getElementById('productoInput').value = nombre;
-    document.getElementById('precioInput').value = precio;
-    document.getElementById('precioInput').focus();
-}
-</script>
 {% endblock %}

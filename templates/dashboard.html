@@ -1,242 +1,77 @@
 {% extends "base.html" %}
-
-{% block title %}Dashboard — Box Gym{% endblock %}
+{% block title %}Dashboard{% endblock %}
 
 {% block content %}
-<div class="page-header">
-    <h2>Dashboard Principal</h2>
-    <p>Bienvenido, {{ current_user.username|title }}. Resumen del día de hoy.</p>
+<div class="mb-8">
+    <h2 class="text-3xl font-bold text-gray-800">Dashboard</h2>
+    <p class="text-gray-600">Resumen general del gimnasio</p>
 </div>
 
-<!-- STATS ROW -->
-<div class="grid-4" style="margin-bottom: 24px;">
-    <div class="stat-card">
-        <div class="stat-label"><i class="fas fa-users"></i> Alumnos Activos</div>
-        <div class="stat-value" style="color: var(--accent-blue);">{{ stats.total_alumnos }}</div>
-        <div class="stat-sub">{{ stats.alumnos_deuda }} con deuda pendiente</div>
-    </div>
-    <div class="stat-card">
-        <div class="stat-label"><i class="fas fa-user-check"></i> Ingresos Hoy</div>
-        <div class="stat-value" style="color: var(--accent-green);">{{ stats.ingresos_hoy }}</div>
-        <div class="stat-sub">Asistencias registradas</div>
-    </div>
-    <div class="stat-card">
-        <div class="stat-label"><i class="fas fa-dollar-sign"></i> Ventas Hoy</div>
-        <div class="stat-value" style="color: var(--accent-yellow);">${{ "%.0f"|format(stats.ventas_hoy) }}</div>
-        <div class="stat-sub">{{ stats.cant_ventas_hoy }} transacciones</div>
-    </div>
-    <div class="stat-card">
-        <div class="stat-label"><i class="fas fa-chart-line"></i> Ventas del Mes</div>
-        <div class="stat-value" style="color: var(--accent-red);">${{ "%.0f"|format(stats.ventas_mes) }}</div>
-        <div class="stat-sub">Ingresos totales</div>
-    </div>
-</div>
-
-<!-- MAIN PANELS -->
-<div class="grid-2" style="margin-bottom: 24px;">
-
-    <!-- ASISTENCIA RÁPIDA -->
-    <div class="card">
-        <div class="card-header">
-            <div class="card-title">
-                <span style="color: var(--accent-blue)"><i class="fas fa-user-check"></i></span>
-                Ingreso de Alumnos
-            </div>
-            <a href="{{ url_for('asistencia_page') }}" class="btn btn-outline btn-sm">Ver historial</a>
-        </div>
-
-        <div id="asistencia-result" style="display:none; padding: 14px; border-radius: 10px; margin-bottom: 16px; font-size: 15px; font-weight: 600;"></div>
-
-        <div style="display: flex; gap: 10px;">
-            <input type="text"
-                   id="dni-input"
-                   class="form-control"
-                   placeholder="Últimos 3 dígitos del DNI"
-                   maxlength="3"
-                   style="font-size: 22px; text-align: center; letter-spacing: 4px; font-weight: 700;"
-                   autofocus>
-            <button onclick="registrarIngreso()" class="btn btn-blue" style="white-space: nowrap;">
-                <i class="fas fa-check"></i> OK
-            </button>
-        </div>
-        <p style="font-size: 12px; color: var(--text-muted); margin-top: 10px;">
-            <i class="fas fa-info-circle"></i> También podés presionar Enter para confirmar
-        </p>
-
-        <!-- Últimas asistencias -->
-        <div class="divider"></div>
-        <div style="font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin-bottom: 12px;">
-            Últimas asistencias
-        </div>
-        <div id="ultimas-asistencias">
-            {% if stats.ultimas_asistencias %}
-                {% for a in stats.ultimas_asistencias %}
-                <div style="display: flex; align-items: center; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--border);">
-                    <div style="display: flex; align-items: center; gap: 10px;">
-                        <div style="width: 32px; height: 32px; background: rgba(59,130,246,0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--accent-blue); font-size: 13px;">
-                            <i class="fas fa-user"></i>
-                        </div>
-                        <div>
-                            <div style="font-size: 13px; font-weight: 600;">{{ a.nombre }}</div>
-                            <div style="font-size: 11px; color: var(--text-muted);">{{ a.clase or 'Sin clase' }}</div>
-                        </div>
-                    </div>
-                    <div style="font-size: 11px; color: var(--text-muted);">
-                        {{ a.ultima_asistencia.strftime('%H:%M') if a.ultima_asistencia else '—' }}
-                    </div>
-                </div>
-                {% endfor %}
-            {% else %}
-                <div style="text-align:center; padding: 20px; color: var(--text-muted); font-size: 13px;">
-                    Sin ingresos hoy
-                </div>
-            {% endif %}
-        </div>
-    </div>
-
-    <!-- VENTA RÁPIDA -->
-    <div class="card">
-        <div class="card-header">
-            <div class="card-title">
-                <span style="color: var(--accent-green)"><i class="fas fa-shopping-cart"></i></span>
-                Venta Rápida
-            </div>
-            <a href="{{ url_for('ventas_page') }}" class="btn btn-outline btn-sm">Ver todas</a>
-        </div>
-
-        <form method="POST" action="{{ url_for('venta') }}">
-            <div class="form-group">
-                <label class="form-label">Producto / Servicio</label>
-                <select name="producto" class="form-control" required>
-                    <option value="">— Seleccionar —</option>
-                    <optgroup label="Bebidas">
-                        <option>Agua mineral</option>
-                        <option>Isotónico</option>
-                        <option>Proteína</option>
-                        <option>Energizante</option>
-                    </optgroup>
-                    <optgroup label="Equipamiento">
-                        <option>Guantes de boxeo</option>
-                        <option>Vendas</option>
-                        <option>Protector bucal</option>
-                        <option>Cuerda de saltar</option>
-                    </optgroup>
-                    <optgroup label="Cuotas">
-                        <option>Cuota mensual</option>
-                        <option>Cuota quincenal</option>
-                        <option>Clase suelta</option>
-                    </optgroup>
-                    <option>Otro</option>
-                </select>
-            </div>
-
-            <div class="form-group">
-                <label class="form-label">Monto ($)</label>
-                <input type="number" name="precio" class="form-control" placeholder="0.00" step="0.01" min="0" required>
-            </div>
-
-            <button type="submit" class="btn btn-success" style="width: 100%; padding: 12px; font-size: 15px;">
-                <i class="fas fa-check-circle"></i> Registrar Venta
-            </button>
-        </form>
-
-        <div class="divider"></div>
-        <div style="font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin-bottom: 12px;">
-            Últimas ventas del día
-        </div>
-
-        {% if stats.ultimas_ventas %}
-        {% for v in stats.ultimas_ventas %}
-        <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border);">
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+    <div class="bg-white rounded-xl shadow-lg p-6 border-l-4 border-blue-500">
+        <div class="flex items-center justify-between">
             <div>
-                <div style="font-size: 13px; font-weight: 500;">{{ v.item }}</div>
-                <div style="font-size: 11px; color: var(--text-muted);">{{ v.fecha.strftime('%H:%M') }}</div>
+                <p class="text-gray-500 text-sm">Total Alumnos</p>
+                <p class="text-3xl font-bold text-gray-800">{{ stats.total_alumnos }}</p>
             </div>
-            <div style="font-weight: 700; color: var(--accent-green);">${{ "%.0f"|format(v.monto) }}</div>
+            <i class="fas fa-users text-4xl text-blue-500 opacity-50"></i>
         </div>
-        {% endfor %}
-        {% else %}
-        <div style="text-align:center; padding: 20px; color: var(--text-muted); font-size: 13px;">Sin ventas hoy</div>
-        {% endif %}
+    </div>
+    
+    <div class="bg-white rounded-xl shadow-lg p-6 border-l-4 border-yellow-500">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-gray-500 text-sm">Alumnos Inactivos</p>
+                <p class="text-3xl font-bold text-gray-800">{{ stats.total_alumnos_inactivos }}</p>
+            </div>
+            <i class="fas fa-user-slash text-4xl text-yellow-500 opacity-50"></i>
+        </div>
+    </div>
+    
+    <div class="bg-white rounded-xl shadow-lg p-6 border-l-4 border-green-500">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-gray-500 text-sm">Ventas Hoy</p>
+                <p class="text-3xl font-bold text-gray-800">{{ stats.total_ventas_hoy }}</p>
+            </div>
+            <i class="fas fa-shopping-cart text-4xl text-green-500 opacity-50"></i>
+        </div>
+    </div>
+    
+    <div class="bg-white rounded-xl shadow-lg p-6 border-l-4 border-red-500">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-gray-500 text-sm">Monto Ventas Hoy</p>
+                <p class="text-3xl font-bold text-gray-800">${{ "%.0f"|format(stats.monto_ventas_hoy) }}</p>
+            </div>
+            <i class="fas fa-dollar-sign text-4xl text-red-500 opacity-50"></i>
+        </div>
     </div>
 </div>
 
-<!-- ALERTAS DEUDA -->
-{% if stats.alumnos_deuda_lista %}
-<div class="card" style="border-color: rgba(224,48,48,0.3);">
-    <div class="card-header">
-        <div class="card-title">
-            <span style="color: var(--accent-red)"><i class="fas fa-exclamation-triangle"></i></span>
-            Alumnos con Deuda Pendiente
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div class="bg-white rounded-xl shadow-lg p-6">
+        <h3 class="text-lg font-bold text-gray-800 mb-4">Acciones Rápidas</h3>
+        <div class="space-y-3">
+            <a href="{{ url_for('nuevo_alumno') }}" class="block bg-blue-50 hover:bg-blue-100 text-blue-700 p-3 rounded-lg transition">
+                <i class="fas fa-user-plus mr-2"></i> Registrar Nuevo Alumno
+            </a>
+            <a href="{{ url_for('ventas') }}" class="block bg-green-50 hover:bg-green-100 text-green-700 p-3 rounded-lg transition">
+                <i class="fas fa-cart-plus mr-2"></i> Registrar Venta
+            </a>
+            <a href="{{ url_for('clases') }}" class="block bg-purple-50 hover:bg-purple-100 text-purple-700 p-3 rounded-lg transition">
+                <i class="fas fa-calendar mr-2"></i> Ver Horarios de Clases
+            </a>
         </div>
-        <a href="{{ url_for('alumnos') }}?filtro=deuda" class="btn btn-outline btn-sm">Ver todos</a>
     </div>
-    <div style="display: flex; flex-wrap: wrap; gap: 10px;">
-        {% for a in stats.alumnos_deuda_lista %}
-        <a href="{{ url_for('editar_alumno', id=a.id) }}" style="text-decoration:none;">
-            <div style="background: rgba(224,48,48,0.08); border: 1px solid rgba(224,48,48,0.2); border-radius: 10px; padding: 10px 16px; display: flex; align-items: center; gap: 8px;">
-                <i class="fas fa-user" style="color: var(--accent-red); font-size: 12px;"></i>
-                <div>
-                    <div style="font-size: 13px; font-weight: 600; color: var(--text-main);">{{ a.nombre }}</div>
-                    <div style="font-size: 11px; color: var(--text-muted);">{{ a.clase or 'Sin clase' }}</div>
-                </div>
-            </div>
-        </a>
-        {% endfor %}
+    
+    <div class="bg-white rounded-xl shadow-lg p-6">
+        <h3 class="text-lg font-bold text-gray-800 mb-4">Información</h3>
+        <div class="space-y-3 text-gray-600">
+            <p><i class="fas fa-clock text-blue-500 mr-2"></i> Último acceso: {{ current_user.username }}</p>
+            <p><i class="fas fa-shield-alt text-green-500 mr-2"></i> Rol: {{ current_user.role|title }}</p>
+            <p><i class="fas fa-calendar-day text-red-500 mr-2"></i> Fecha: {{ now.strftime('%d/%m/%Y') if now else '' }}</p>
+        </div>
     </div>
 </div>
-{% endif %}
-{% endblock %}
-
-{% block extra_scripts %}
-<script>
-document.getElementById('dni-input').addEventListener('keydown', function(e) {
-    if (e.key === 'Enter') registrarIngreso();
-});
-
-function registrarIngreso() {
-    const dni = document.getElementById('dni-input').value.trim();
-    if (!dni || dni.length !== 3) {
-        showResult('Ingresá los últimos 3 dígitos del DNI', 'error');
-        return;
-    }
-
-    const btn = document.querySelector('button[onclick="registrarIngreso()"]');
-    btn.disabled = true;
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-
-    const formData = new FormData();
-    formData.append('dni', dni);
-
-    fetch('/asistencia', {
-        method: 'POST',
-        body: formData,
-        headers: { 'X-Requested-With': 'XMLHttpRequest' }
-    })
-    .then(r => r.json())
-    .then(data => {
-        showResult(data.msg, data.status);
-        if (data.status === 'success') {
-            document.getElementById('dni-input').value = '';
-            setTimeout(() => location.reload(), 1500);
-        }
-    })
-    .catch(() => showResult('Error de conexión', 'error'))
-    .finally(() => {
-        btn.disabled = false;
-        btn.innerHTML = '<i class="fas fa-check"></i> OK';
-        document.getElementById('dni-input').focus();
-    });
-}
-
-function showResult(msg, status) {
-    const el = document.getElementById('asistencia-result');
-    el.style.display = 'block';
-    el.style.background = status === 'success' ? 'rgba(34,197,94,0.1)' : 'rgba(224,48,48,0.1)';
-    el.style.border = status === 'success' ? '1px solid rgba(34,197,94,0.3)' : '1px solid rgba(224,48,48,0.3)';
-    el.style.color = status === 'success' ? 'var(--accent-green)' : '#ff6b6b';
-    el.innerHTML = (status === 'success' ? '✅ ' : '❌ ') + msg;
-    setTimeout(() => { el.style.display = 'none'; }, 4000);
-}
-</script>
 {% endblock %}
