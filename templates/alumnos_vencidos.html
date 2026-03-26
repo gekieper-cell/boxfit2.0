@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% block title %}Alumnos Vencidos — Box Gym{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h2>Alumnos con Cuota Vencida</h2>
+    <p>Lista de alumnos que deben regularizar su situación</p>
+</div>
+
+<div class="card">
+    {% if alumnos %}
+    <div class="table-wrapper">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Nombre</th>
+                    <th>Teléfono</th>
+                    <th>Plan</th>
+                    <th>Vencimiento</th>
+                    <th>Días Vencido</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for a in alumnos %}
+                <tr>
+                    <td>
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <div style="width: 32px; height: 32px; background: var(--bg-card2); border: 1px solid var(--border); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                                {{ a.nombre[0]|upper }}
+                            </div>
+                            <span style="font-weight: 600;">{{ a.nombre }}</span>
+                        </div>
+                    </td>
+                    <td>
+                        {% if a.telefono %}
+                        <a href="https://wa.me/{{ a.telefono|replace(' ', '') }}" target="_blank" style="color: #25D366; text-decoration: none;">
+                            <i class="fab fa-whatsapp"></i> {{ a.telefono }}
+                        </a>
+                        {% else %}
+                        <span style="color: var(--text-muted);">—</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <span class="badge badge-blue">{{ a.plan|title }}</span>
+                        <div style="font-size: 11px; color: var(--text-muted);">${{ "%.0f"|format(a.valor_cuota) }}</div>
+                    </td>
+                    <td style="color: var(--accent-red); font-weight: 600;">
+                        {{ a.fecha_vencimiento.strftime('%d/%m/%Y') if a.fecha_vencimiento else 'Sin definir' }}
+                    </td>
+                    <td>
+                        {% if a.fecha_vencimiento %}
+                        <span class="badge badge-danger">{{ (now|default(today) - a.fecha_vencimiento).days if now else 0 }} días</span>
+                        {% else %}
+                        —
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div style="display: flex; gap: 6px;">
+                            <a href="{{ url_for('registrar_pago', id=a.id) }}" class="btn btn-success btn-sm" title="Registrar Pago">
+                                <i class="fas fa-money-bill"></i> Pagar
+                            </a>
+                            <a href="{{ url_for('editar_alumno', id=a.id) }}" class="btn btn-outline btn-sm" title="Editar">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <i class="fas fa-check-circle" style="font-size: 48px; color: var(--accent-green);"></i>
+        <h3 style="margin-top: 16px;">No hay alumnos con cuota vencida</h3>
+        <p style="color: var(--text-muted);">Todos los alumnos están al día con sus pagos</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// Pasar la fecha actual al template
+const today = new Date();
+</script>
+{% endblock %}

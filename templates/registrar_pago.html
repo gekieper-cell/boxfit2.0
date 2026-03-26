@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+{% block title %}Registrar Pago - {{ alumno.nombre }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h2>Registrar Pago</h2>
+    <p>Gestionar el pago de cuota del alumno</p>
+    <a href="{{ url_for('alumnos') }}" class="back-link">
+        <i class="fas fa-arrow-left"></i> Volver a alumnos
+    </a>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <div class="card-title">
+            <i class="fas fa-user" style="color: var(--accent-blue);"></i>
+            Datos del Alumno
+        </div>
+    </div>
+
+    <div style="background: var(--bg-card2); padding: 20px; border-radius: 12px; margin-bottom: 24px;">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
+            <div>
+                <div style="font-size: 12px; color: var(--text-muted);">Nombre</div>
+                <div style="font-size: 18px; font-weight: 600;">{{ alumno.nombre }}</div>
+            </div>
+            <div>
+                <div style="font-size: 12px; color: var(--text-muted);">Plan</div>
+                <div><span class="badge badge-blue">{{ alumno.plan|title }}</span></div>
+            </div>
+            <div>
+                <div style="font-size: 12px; color: var(--text-muted);">Valor Cuota</div>
+                <div style="font-size: 18px; font-weight: 600; color: var(--accent-green);">${{ "%.2f"|format(alumno.valor_cuota) }}</div>
+            </div>
+            <div>
+                <div style="font-size: 12px; color: var(--text-muted);">Vencimiento Actual</div>
+                <div>
+                    {% if alumno.fecha_vencimiento %}
+                        {% if not alumno.esta_activo() %}
+                        <span class="badge badge-danger">{{ alumno.fecha_vencimiento.strftime('%d/%m/%Y') }}</span>
+                        {% else %}
+                        <span>{{ alumno.fecha_vencimiento.strftime('%d/%m/%Y') }}</span>
+                        {% endif %}
+                    {% else %}
+                    <span style="color: var(--text-muted);">Sin definir</span>
+                    {% endif %}
+                </div>
+            </div>
+            <div>
+                <div style="font-size: 12px; color: var(--text-muted);">Estado</div>
+                <div>
+                    {% if alumno.estado == 'suspendido' %}
+                    <span class="badge badge-yellow">Suspendido</span>
+                    {% elif not alumno.esta_activo() %}
+                    <span class="badge badge-danger">Vencido</span>
+                    {% else %}
+                    <span class="badge badge-success">Activo</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <form method="POST">
+        <div class="form-group">
+            <label class="form-label">Monto a pagar ($)</label>
+            <input type="number" 
+                   name="monto" 
+                   value="{{ alumno.valor_cuota }}" 
+                   step="0.01" 
+                   min="0" 
+                   required 
+                   class="form-control"
+                   style="font-size: 20px; font-weight: 600;">
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Método de pago</label>
+            <select name="metodo_pago" class="form-control" required>
+                <option value="efectivo">💵 Efectivo</option>
+                <option value="transferencia">🏦 Transferencia Bancaria</option>
+                <option value="tarjeta">💳 Tarjeta de Crédito/Débito</option>
+                <option value="mercado pago">📱 Mercado Pago</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">N° Comprobante (opcional)</label>
+            <input type="text" 
+                   name="comprobante" 
+                   placeholder="Ej: 001-12345678 / Transferencia N°123" 
+                   class="form-control">
+            <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">
+                <i class="fas fa-info-circle"></i> Para transferencias, indicar el comprobante o referencia
+            </div>
+        </div>
+
+        <div style="display: flex; gap: 12px; margin-top: 32px;">
+            <button type="submit" class="btn btn-success" style="flex: 1; padding: 12px;">
+                <i class="fas fa-check-circle"></i> Registrar Pago
+            </button>
+            <a href="{{ url_for('alumnos') }}" class="btn btn-outline" style="flex: 1;">
+                <i class="fas fa-times"></i> Cancelar
+            </a>
+        </div>
+    </form>
+</div>
+
+<div class="card" style="margin-top: 20px;">
+    <div class="card-header">
+        <div class="card-title">
+            <i class="fas fa-history"></i>
+            Últimos Pagos
+        </div>
+        <a href="{{ url_for('historial_pagos', id=alumno.id) }}" class="btn btn-outline btn-sm">
+            Ver historial completo
+        </a>
+    </div>
+    {% if alumno.pagos %}
+    <div class="table-wrapper">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Fecha</th>
+                    <th>Monto</th>
+                    <th>Período</th>
+                    <th>Método</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in alumno.pagos[-3:]|reverse %}
+                <tr>
+                    <td>{{ p.fecha_pago.strftime('%d/%m/%Y') }}</td>
+                    <td style="color: var(--accent-green);">${{ "%.2f"|format(p.monto) }}</td>
+                    <td>{{ p.periodo_desde.strftime('%d/%m') if p.periodo_desde else '-' }} → {{ p.periodo_hasta.strftime('%d/%m/%Y') if p.periodo_hasta else '-' }}</td>
+                    <td>{{ p.metodo_pago|title }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div style="text-align: center; padding: 20px; color: var(--text-muted);">
+        <i class="fas fa-receipt"></i> Sin pagos previos
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

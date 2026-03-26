@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+{% block title %}Historial de Pagos - {{ alumno.nombre }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h2>Historial de Pagos</h2>
+    <p>Registro completo de pagos de {{ alumno.nombre }}</p>
+    <div style="display: flex; gap: 12px; margin-top: 12px;">
+        <a href="{{ url_for('alumnos') }}" class="back-link">
+            <i class="fas fa-arrow-left"></i> Volver a alumnos
+        </a>
+        <a href="{{ url_for('registrar_pago', id=alumno.id) }}" class="btn btn-success btn-sm">
+            <i class="fas fa-plus"></i> Nuevo Pago
+        </a>
+    </div>
+</div>
+
+<div class="card">
+    <div style="background: var(--bg-card2); padding: 16px; border-radius: 12px; margin-bottom: 24px;">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px;">
+            <div>
+                <div style="font-size: 11px; color: var(--text-muted);">Alumno</div>
+                <div style="font-weight: 600;">{{ alumno.nombre }}</div>
+            </div>
+            <div>
+                <div style="font-size: 11px; color: var(--text-muted);">Plan</div>
+                <div>{{ alumno.plan|title }}</div>
+            </div>
+            <div>
+                <div style="font-size: 11px; color: var(--text-muted);">Valor Cuota</div>
+                <div>${{ "%.0f"|format(alumno.valor_cuota) }}</div>
+            </div>
+            <div>
+                <div style="font-size: 11px; color: var(--text-muted);">Vencimiento Actual</div>
+                <div>
+                    {% if alumno.fecha_vencimiento %}
+                        {% if not alumno.esta_activo() %}
+                        <span class="badge badge-danger">{{ alumno.fecha_vencimiento.strftime('%d/%m/%Y') }}</span>
+                        {% else %}
+                        {{ alumno.fecha_vencimiento.strftime('%d/%m/%Y') }}
+                        {% endif %}
+                    {% else %}
+                    —
+                    {% endif %}
+                </div>
+            </div>
+            <div>
+                <div style="font-size: 11px; color: var(--text-muted);">Estado</div>
+                <div>
+                    {% if alumno.estado == 'suspendido' %}
+                    <span class="badge badge-yellow">Suspendido</span>
+                    {% elif not alumno.esta_activo() %}
+                    <span class="badge badge-danger">Vencido</span>
+                    {% else %}
+                    <span class="badge badge-success">Activo</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if pagos %}
+    <div class="table-wrapper">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Fecha Pago</th>
+                    <th>Monto</th>
+                    <th>Período</th>
+                    <th>Método</th>
+                    <th>Comprobante</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in pagos %}
+                <tr>
+                    <td>{{ p.fecha_pago.strftime('%d/%m/%Y %H:%M') }}</td>
+                    <td style="color: var(--accent-green); font-weight: 600;">${{ "%.2f"|format(p.monto) }}</td>
+                    <td>
+                        {{ p.periodo_desde.strftime('%d/%m/%Y') if p.periodo_desde else '—' }}
+                        →
+                        {{ p.periodo_hasta.strftime('%d/%m/%Y') if p.periodo_hasta else '—' }}
+                    </td>
+                    <td>
+                        {% if p.metodo_pago == 'efectivo' %}
+                        <i class="fas fa-money-bill"></i> Efectivo
+                        {% elif p.metodo_pago == 'transferencia' %}
+                        <i class="fas fa-university"></i> Transferencia
+                        {% elif p.metodo_pago == 'tarjeta' %}
+                        <i class="fas fa-credit-card"></i> Tarjeta
+                        {% else %}
+                        <i class="fas fa-mobile-alt"></i> {{ p.metodo_pago|title }}
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if p.comprobante %}
+                        <span class="badge badge-blue">{{ p.comprobante }}</span>
+                        {% else %}
+                        <span style="color: var(--text-muted);">—</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Resumen de pagos -->
+    <div style="margin-top: 24px; padding: 16px; background: var(--bg-card2); border-radius: 12px;">
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; text-align: center;">
+            <div>
+                <div style="font-size: 11px; color: var(--text-muted);">Total Pagado</div>
+                <div style="font-size: 24px; font-weight: 700; color: var(--accent-green);">
+                    ${{ "%.2f"|format(pagos|sum(attribute='monto')) }}
+                </div>
+            </div>
+            <div>
+                <div style="font-size: 11px; color: var(--text-muted);">Cantidad de Pagos</div>
+                <div style="font-size: 24px; font-weight: 700;">{{ pagos|length }}</div>
+            </div>
+            <div>
+                <div style="font-size: 11px; color: var(--text-muted);">Último Pago</div>
+                <div style="font-size: 14px; font-weight: 600;">
+                    {{ pagos[0].fecha_pago.strftime('%d/%m/%Y') if pagos else '—' }}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <i class="fas fa-receipt" style="font-size: 48px; opacity: 0.5;"></i>
+        <h3 style="margin-top: 16px;">Sin pagos registrados</h3>
+        <p style="color: var(--text-muted);">Este alumno aún no tiene pagos registrados</p>
+        <a href="{{ url_for('registrar_pago', id=alumno.id) }}" class="btn btn-primary" style="margin-top: 20px;">
+            <i class="fas fa-money-bill"></i> Registrar primer pago
+        </a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
