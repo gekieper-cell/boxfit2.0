@@ -88,3 +88,28 @@ class CajaDiaria(db.Model):
     
     usuario_apertura = db.relationship('User', foreign_keys=[usuario_apertura_id])
     usuario_cierre = db.relationship('User', foreign_keys=[usuario_cierre_id])
+
+class ConfiguracionSitio(db.Model):
+    __tablename__ = 'configuracion_sitio'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    clave = db.Column(db.String(100), unique=True, nullable=False)
+    valor = db.Column(db.Text, nullable=True)
+    tipo = db.Column(db.String(20), default='text')
+    
+    @staticmethod
+    def get(clave, default=''):
+        config = ConfiguracionSitio.query.filter_by(clave=clave).first()
+        if config:
+            return config.valor
+        return default
+    
+    @staticmethod
+    def set(clave, valor):
+        config = ConfiguracionSitio.query.filter_by(clave=clave).first()
+        if config:
+            config.valor = valor
+        else:
+            config = ConfiguracionSitio(clave=clave, valor=valor)
+            db.session.add(config)
+        db.session.commit()

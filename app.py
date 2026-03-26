@@ -1,9 +1,10 @@
 import os
+import json
 import pandas as pd
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, send_file
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
-from models import db, User, Alumno, Clase, AsistenciaClase, Producto, Venta, CajaDiaria
+from models import db, User, Alumno, Clase, AsistenciaClase, Producto, Venta, CajaDiaria, Configuracion, ConfiguracionSitio
 from datetime import datetime, date, timedelta
 from sqlalchemy import func, desc
 from io import BytesIO
@@ -50,6 +51,14 @@ def get_top_productos(limit=5):
     ).group_by(Venta.producto_nombre).order_by(func.sum(Venta.cantidad).desc()).limit(limit).all()
     return [{'nombre': r[0], 'cantidad': r[1]} for r in resultados]
 
+# ====================== CONTEXTO GLOBAL ======================
+
+@app.context_processor
+def inject_config():
+    return {
+        'configuracion_sitio': ConfiguracionSitio
+    }
+
 # ====================== RUTAS PRINCIPALES ======================
 
 @app.route('/')
@@ -64,7 +73,22 @@ def index():
     
     ultimas_ventas = Venta.query.order_by(Venta.fecha.desc()).limit(5).all()
     ultimos_alumnos = Alumno.query.order_by(Alumno.fecha_inscripcion.desc()).limit(5).all()
-    productos = Producto.query.filter(Producto.stock > 0).order_by(Producto.nombre).all()
+    
+    # Productos para venta rápida
+    productos_destacados = Configuracion.get('productos_destacados', [])
+    productos = []
+    otros_productos = []
+    
+    if productos_destacados:
+        for p_data in productos_destacados:
+            prod = Producto.query.get(p_data.get('id'))
+            if prod and prod.stock > 0:
+                productos.append(prod)
+        otros = Producto.query.filter(Producto.stock > 0).filter(Producto.id.notin_([p.id for p in productos])).order_by(Producto.nombre).limit(10).all()
+        otros_productos = otros
+    else:
+        productos = Producto.query.filter(Producto.stock > 0).order_by(Producto.nombre).limit(10).all()
+    
     alumnos = Alumno.query.filter_by(activo=True).order_by(Alumno.nombre).all()
     
     ventas_semanales = get_ventas_semanales()
@@ -78,6 +102,7 @@ def index():
         'ultimas_ventas': ultimas_ventas,
         'ultimos_alumnos': ultimos_alumnos,
         'productos': productos,
+        'otros_productos': otros_productos,
         'alumnos': alumnos,
     }
     
@@ -151,10 +176,10 @@ def venta_rapida():
         db.session.add(venta)
         db.session.commit()
         
-        # Actualizar caja diaria
         caja = CajaDiaria.query.filter_by(fecha=date.today()).first()
         if caja and caja.estado == 'abierta':
             caja.ventas_totales = (caja.ventas_totales or 0) + monto
+            db.session.commit()
         
         alumno_nombre = Alumno.query.get(alumno_id).nombre if alumno_id else 'Sin alumno asignado'
         flash(f'Venta registrada: {producto.nombre} x{cantidad} - ${monto} - {alumno_nombre}', 'success')
@@ -453,7 +478,6 @@ def registrar_venta():
         db.session.add(venta)
         db.session.commit()
         
-        # Actualizar caja diaria
         caja = CajaDiaria.query.filter_by(fecha=date.today()).first()
         if caja and caja.estado == 'abierta':
             caja.ventas_totales = (caja.ventas_totales or 0) + monto
@@ -733,6 +757,91 @@ def exportar_reportes():
     
     output.seek(0)
     return send_file(output, download_name=f'reporte_boxfit_{date.today()}.xlsx', as_attachment=True)
+
+# ====================== CONFIGURACIÓN PRODUCTOS DESTACADOS ======================
+
+@app.route('/configuracion')
+@login_required
+def configuracion():
+    if current_user.role != 'admin':
+        flash('Solo administradores', 'error')
+        return redirect(url_for('index'))
+    
+    productos_destacados = Configuracion.get('productos_destacados', [])
+    todos_productos = Producto.query.order_by(Producto.nombre).all()
+    
+    return render_template('configuracion.html', 
+                          productos_destacados=productos_destacados,
+                          todos_productos=todos_productos)
+
+@app.route('/configuracion/guardar', methods=['POST'])
+@login_required
+def guardar_configuracion():
+    if current_user.role != 'admin':
+        flash('Solo administradores', 'error')
+        return redirect(url_for('index'))
+    
+    productos_ids = request.form.getlist('productos_destacados')
+    productos_destacados = []
+    for pid in productos_ids:
+        producto = Producto.query.get(pid)
+        if producto:
+            productos_destacados.append({
+                'id': producto.id,
+                'nombre': producto.nombre,
+                'precio': producto.precio,
+                'stock': producto.stock
+            })
+    
+    Configuracion.set('productos_destacados', productos_destacados, 'json', 'Productos que aparecen en venta rápida')
+    
+    flash('Configuración guardada correctamente', 'success')
+    return redirect(url_for('configuracion'))
+
+@app.route('/configuracion/reset')
+@login_required
+def reset_configuracion():
+    if current_user.role != 'admin':
+        flash('Solo administradores', 'error')
+        return redirect(url_for('index'))
+    
+    Configuracion.set('productos_destacados', [], 'json', 'Productos que aparecen en venta rápida')
+    
+    flash('Configuración restablecida', 'success')
+    return redirect(url_for('configuracion'))
+
+# ====================== CONFIGURACIÓN DEL SITIO ======================
+
+@app.route('/configuracion/sitio', methods=['GET', 'POST'])
+@login_required
+def configuracion_sitio():
+    if current_user.role != 'admin':
+        flash('Solo administradores', 'error')
+        return redirect(url_for('index'))
+    
+    if request.method == 'POST':
+        ConfiguracionSitio.set('nombre_sitio', request.form.get('nombre_sitio', 'BoxFit Gym'))
+        ConfiguracionSitio.set('logo_icono', request.form.get('logo_icono', '🥊'))
+        ConfiguracionSitio.set('color_principal', request.form.get('color_principal', '#3b82f6'))
+        ConfiguracionSitio.set('color_secundario', request.form.get('color_secundario', '#ef4444'))
+        ConfiguracionSitio.set('favicon', request.form.get('favicon', '🥊'))
+        ConfiguracionSitio.set('titulo_pagina', request.form.get('titulo_pagina', 'BoxFit Gym'))
+        ConfiguracionSitio.set('frase_bienvenida', request.form.get('frase_bienvenida', 'Sistema de Gestión'))
+        
+        flash('Configuración guardada correctamente', 'success')
+        return redirect(url_for('configuracion_sitio'))
+    
+    config = {
+        'nombre_sitio': ConfiguracionSitio.get('nombre_sitio', 'BoxFit Gym'),
+        'logo_icono': ConfiguracionSitio.get('logo_icono', '🥊'),
+        'color_principal': ConfiguracionSitio.get('color_principal', '#3b82f6'),
+        'color_secundario': ConfiguracionSitio.get('color_secundario', '#ef4444'),
+        'favicon': ConfiguracionSitio.get('favicon', '🥊'),
+        'titulo_pagina': ConfiguracionSitio.get('titulo_pagina', 'BoxFit Gym'),
+        'frase_bienvenida': ConfiguracionSitio.get('frase_bienvenida', 'Sistema de Gestión')
+    }
+    
+    return render_template('configuracion_sitio.html', config=config)
 
 # ====================== INICIALIZACIÓN ======================
 
