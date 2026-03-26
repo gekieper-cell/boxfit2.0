@@ -8,7 +8,7 @@
 </div>
 
 <!-- Stats -->
-<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
     <div class="stat-card">
         <div class="flex items-center justify-between">
             <div>
@@ -47,47 +47,106 @@
     </div>
 </div>
 
-<!-- Acciones Rápidas -->
-<div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+<!-- Venta Rápida y Últimos Alumnos -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+    <!-- Venta Rápida -->
     <div class="card">
         <div class="card-header">
-            <h3 class="font-semibold text-gray-800">Acciones Rápidas</h3>
+            <h3 class="font-semibold text-gray-800">Venta Rápida</h3>
         </div>
-        <div class="card-body space-y-2">
-            <a href="{{ url_for('nuevo_alumno') }}" class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
-                <i class="fas fa-user-plus text-blue-500 w-5"></i>
-                <span class="text-sm">Registrar Nuevo Alumno</span>
-            </a>
-            <a href="{{ url_for('ventas') }}" class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
-                <i class="fas fa-cart-plus text-green-500 w-5"></i>
-                <span class="text-sm">Registrar Venta</span>
-            </a>
-            <a href="{{ url_for('clases') }}" class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
-                <i class="fas fa-calendar-alt text-purple-500 w-5"></i>
-                <span class="text-sm">Ver Horarios de Clases</span>
-            </a>
+        <div class="card-body">
+            <form method="POST" action="{{ url_for('venta_rapida') }}">
+                <div class="form-group">
+                    <label class="form-label">Alumno (opcional)</label>
+                    <select name="alumno_id" class="form-control">
+                        <option value="">Sin alumno asignado</option>
+                        {% for a in stats.alumnos %}
+                        <option value="{{ a.id }}">{{ a.nombre }} - {{ a.clase or 'Sin clase' }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Producto</label>
+                    <select name="producto_id" required class="form-control">
+                        <option value="">Seleccionar producto</option>
+                        {% for p in stats.productos %}
+                        <option value="{{ p.id }}">{{ p.nombre }} - ${{ p.precio }} (Stock: {{ p.stock }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="form-group">
+                        <label class="form-label">Cantidad</label>
+                        <input type="number" name="cantidad" value="1" min="1" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Talle</label>
+                        <input type="text" name="talle" placeholder="S, M, L, XL" class="form-control">
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-success w-full justify-center">
+                    <i class="fas fa-cart-plus"></i> Registrar Venta
+                </button>
+            </form>
         </div>
     </div>
     
+    <!-- Últimos Alumnos -->
     <div class="card">
         <div class="card-header">
-            <h3 class="font-semibold text-gray-800">Información</h3>
+            <h3 class="font-semibold text-gray-800">Últimos Alumnos</h3>
+            <a href="{{ url_for('alumnos') }}" class="text-blue-500 text-sm hover:underline">Ver todos</a>
         </div>
-        <div class="card-body space-y-2">
-            <div class="flex justify-between py-1">
-                <span class="text-gray-500 text-sm">Usuario</span>
-                <span class="text-sm font-medium">{{ current_user.username }}</span>
+        <div class="card-body">
+            <div class="space-y-2">
+                {% for a in stats.ultimos_alumnos %}
+                <div class="flex items-center justify-between py-2 border-b border-gray-100">
+                    <div>
+                        <p class="text-sm font-medium">{{ a.nombre }}</p>
+                        <p class="text-xs text-gray-500">{{ a.clase or 'Sin clase' }} • {{ a.fecha_inscripcion.strftime('%d/%m/%Y') }}</p>
+                    </div>
+                    <a href="{{ url_for('alumno_compras', id=a.id) }}" class="text-blue-500 text-xs hover:underline">
+                        Ver compras
+                    </a>
+                </div>
+                {% endfor %}
             </div>
-            <div class="flex justify-between py-1">
-                <span class="text-gray-500 text-sm">Rol</span>
-                <span class="text-sm badge {% if current_user.role == 'admin' %}badge-admin{% else %}badge-operador{% endif %}">
-                    {{ current_user.role|title }}
-                </span>
-            </div>
-            <div class="flex justify-between py-1">
-                <span class="text-gray-500 text-sm">Fecha</span>
-                <span class="text-sm">{{ now.strftime('%d/%m/%Y') if now else '' }}</span>
-            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Últimas Ventas -->
+<div class="card">
+    <div class="card-header">
+        <h3 class="font-semibold text-gray-800">Últimas Ventas</h3>
+        <a href="{{ url_for('ventas') }}" class="text-blue-500 text-sm hover:underline">Ver todas</a>
+    </div>
+    <div class="card-body">
+        <div class="table-container">
+            <table class="w-full">
+                <thead>
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Producto</th>
+                        <th>Alumno</th>
+                        <th>Cant.</th>
+                        <th>Monto</th>
+                        <th>Vendedor</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for v in stats.ultimas_ventas %}
+                    <tr>
+                        <td class="text-xs">{{ v.fecha.strftime('%d/%m/%Y %H:%M') }}</td>
+                        <td class="text-sm">{{ v.producto_nombre }}</td>
+                        <td class="text-sm">{{ v.alumno.nombre if v.alumno else 'Sin alumno' }}</td>
+                        <td class="text-sm">{{ v.cantidad }}</td>
+                        <td class="text-sm font-medium text-green-600">${{ v.monto }}</td>
+                        <td class="text-xs">{{ v.usuario.username if v.usuario else '-' }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
     </div>
 </div>

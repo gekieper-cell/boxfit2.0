@@ -2,34 +2,76 @@
 {% block title %}Ventas{% endblock %}
 
 {% block content %}
-<div class="mt-0">
-    <h2 class="text-2xl font-bold text-gray-800">Ventas</h2>
-    <p class="text-gray-500 text-sm">Gestión productos y registra ventas</p>
+<div class="mb-5">
+    <h2 class="text-xl font-semibold text-gray-800">Ventas</h2>
+    <p class="text-gray-500 text-sm">Gestiona productos y registra ventas</p>
 </div>
 
-<div class="grid grid-cols-1 lg:grid-cols-2 gap-5 mt-4">
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
     <!-- Registrar Venta -->
-    <div class="bg-white rounded-lg shadow border border-gray-200">
-        <div class="bg-gray-100 px-4 py-2 border-b border-gray-200">
-            <h3 class="text-md font-semibold text-gray-700">Registrar Venta</h3>
+    <div class="card">
+        <div class="card-header">
+            <h3 class="font-semibold text-gray-800">Registrar Venta</h3>
         </div>
-        <div class="p-4">
+        <div class="card-body">
             <form method="POST" action="{{ url_for('registrar_venta') }}">
-                <div class="mb-3">
-                    <label class="block text-gray-600 text-sm mb-1">Producto</label>
-                    <select name="producto_id" required class="w-full p-2 border border-gray-300 rounded text-sm bg-white">
-                        <option value="">Seleccionar producto</option>
-                        {% for p in productos %}
-                        <option value="{{ p.id }}">{{ p.nombre }} - ${{ p.precio }} (Stock: {{ p.stock }})</option>
+                <div class="form-group">
+                    <label class="form-label">Alumno (opcional)</label>
+                    <select name="alumno_id" class="form-control">
+                        <option value="">Sin alumno asignado</option>
+                        {% for a in alumnos %}
+                        <option value="{{ a.id }}">{{ a.nombre }} - {{ a.clase or 'Sin clase' }}</option>
                         {% endfor %}
                     </select>
                 </div>
-                <div class="mb-3">
-                    <label class="block text-gray-600 text-sm mb-1">Cantidad</label>
-                    <input type="number" name="cantidad" value="1" min="1" required class="w-full p-2 border border-gray-300 rounded text-sm">
+                <div class="form-group">
+                    <label class="form-label">Producto</label>
+                    <select name="producto_id" required class="form-control">
+                        <option value="">Seleccionar producto</option>
+                        <optgroup label="👕 Remeras">
+                            {% for p in productos if p.subcategoria == 'Remeras' %}
+                            <option value="{{ p.id }}">{{ p.nombre }} - ${{ p.precio }} (Stock: {{ p.stock }})</option>
+                            {% endfor %}
+                        </optgroup>
+                        <optgroup label="🧥 Sudaderas">
+                            {% for p in productos if p.subcategoria == 'Sudaderas' %}
+                            <option value="{{ p.id }}">{{ p.nombre }} - ${{ p.precio }} (Stock: {{ p.stock }})</option>
+                            {% endfor %}
+                        </optgroup>
+                        <optgroup label="🧥 Buzos">
+                            {% for p in productos if p.subcategoria == 'Buzos' %}
+                            <option value="{{ p.id }}">{{ p.nombre }} - ${{ p.precio }} (Stock: {{ p.stock }})</option>
+                            {% endfor %}
+                        </optgroup>
+                        <optgroup label="👖 Pantalones">
+                            {% for p in productos if p.subcategoria == 'Pantalones' %}
+                            <option value="{{ p.id }}">{{ p.nombre }} - ${{ p.precio }} (Stock: {{ p.stock }})</option>
+                            {% endfor %}
+                        </optgroup>
+                        <optgroup label="🥊 Equipamiento">
+                            {% for p in productos if p.categoria == 'Equipamiento' %}
+                            <option value="{{ p.id }}">{{ p.nombre }} - ${{ p.precio }} (Stock: {{ p.stock }})</option>
+                            {% endfor %}
+                        </optgroup>
+                        <optgroup label="🥤 Bebidas y Suplementos">
+                            {% for p in productos if p.categoria == 'Bebidas' or p.categoria == 'Suplementos' %}
+                            <option value="{{ p.id }}">{{ p.nombre }} - ${{ p.precio }} (Stock: {{ p.stock }})</option>
+                            {% endfor %}
+                        </optgroup>
+                    </select>
                 </div>
-                <button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-2 rounded text-sm transition">
-                    Registrar Venta
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="form-group">
+                        <label class="form-label">Cantidad</label>
+                        <input type="number" name="cantidad" value="1" min="1" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Talle</label>
+                        <input type="text" name="talle" placeholder="S, M, L, XL" class="form-control">
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-success w-full justify-center">
+                    <i class="fas fa-cart-plus"></i> Registrar Venta
                 </button>
             </form>
         </div>
@@ -37,36 +79,52 @@
     
     <!-- Agregar Producto -->
     {% if current_user.role == 'admin' %}
-    <div class="bg-white rounded-lg shadow border border-gray-200">
-        <div class="bg-gray-100 px-4 py-2 border-b border-gray-200">
-            <h3 class="text-md font-semibold text-gray-700">Agregar Producto</h3>
+    <div class="card">
+        <div class="card-header">
+            <h3 class="font-semibold text-gray-800">Agregar Producto</h3>
         </div>
-        <div class="p-4">
+        <div class="card-body">
             <form method="POST" action="{{ url_for('nuevo_producto') }}">
-                <div class="mb-3">
-                    <label class="block text-gray-600 text-sm mb-1">Nombre</label>
-                    <input type="text" name="nombre" placeholder="Ej: Guantes de Boxeo" required class="w-full p-2 border border-gray-300 rounded text-sm">
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="form-group">
+                        <label class="form-label">Nombre</label>
+                        <input type="text" name="nombre" required class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Precio ($)</label>
+                        <input type="number" name="precio" step="0.01" required class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Categoría</label>
+                        <select name="categoria" class="form-control">
+                            <option value="Ropa">Ropa</option>
+                            <option value="Equipamiento">Equipamiento</option>
+                            <option value="Bebidas">Bebidas</option>
+                            <option value="Suplementos">Suplementos</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Subcategoría</label>
+                        <select name="subcategoria" class="form-control">
+                            <option value="">Seleccionar</option>
+                            <option value="Remeras">Remeras</option>
+                            <option value="Sudaderas">Sudaderas</option>
+                            <option value="Buzos">Buzos</option>
+                            <option value="Pantalones">Pantalones</option>
+                            <option value="Accesorios">Accesorios</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Stock</label>
+                        <input type="number" name="stock" value="0" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Talles</label>
+                        <input type="text" name="talles" placeholder="S,M,L,XL" class="form-control">
+                    </div>
                 </div>
-                <div class="mb-3">
-                    <label class="block text-gray-600 text-sm mb-1">Precio ($)</label>
-                    <input type="number" name="precio" placeholder="0.00" step="0.01" required class="w-full p-2 border border-gray-300 rounded text-sm">
-                </div>
-                <div class="mb-3">
-                    <label class="block text-gray-600 text-sm mb-1">Stock</label>
-                    <input type="number" name="stock" placeholder="0" value="0" class="w-full p-2 border border-gray-300 rounded text-sm">
-                </div>
-                <div class="mb-3">
-                    <label class="block text-gray-600 text-sm mb-1">Categoría</label>
-                    <select name="categoria" class="w-full p-2 border border-gray-300 rounded text-sm bg-white">
-                        <option value="">Seleccionar</option>
-                        <option>Bebidas</option>
-                        <option>Equipamiento</option>
-                        <option>Suplementos</option>
-                        <option>Alimentos</option>
-                    </select>
-                </div>
-                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 rounded text-sm transition">
-                    Agregar Producto
+                <button type="submit" class="btn btn-primary w-full justify-center">
+                    <i class="fas fa-plus"></i> Agregar Producto
                 </button>
             </form>
         </div>
@@ -75,33 +133,43 @@
 </div>
 
 <!-- Inventario de Productos -->
-<div class="bg-white rounded-lg shadow border border-gray-200 mt-5">
-    <div class="bg-gray-100 px-4 py-2 border-b border-gray-200">
-        <h3 class="text-md font-semibold text-gray-700">Inventario de Productos</h3>
+<div class="card">
+    <div class="card-header">
+        <h3 class="font-semibold text-gray-800">Inventario de Productos</h3>
+        <a href="{{ url_for('productos') }}" class="text-blue-500 text-sm hover:underline">Gestionar inventario</a>
     </div>
-    <div class="p-4">
-        {% if productos %}
-        <div class="overflow-x-auto">
-            <table class="w-full text-sm">
-                <thead class="bg-gray-50 border-b">
+    <div class="card-body">
+        <div class="table-container">
+            <table class="w-full">
+                <thead>
                     <tr>
-                        <th class="text-left py-2 px-2 font-semibold text-gray-600">Producto</th>
-                        <th class="text-left py-2 px-2 font-semibold text-gray-600">Categoría</th>
-                        <th class="text-left py-2 px-2 font-semibold text-gray-600">Precio</th>
-                        <th class="text-left py-2 px-2 font-semibold text-gray-600">Stock</th>
-                        <th class="text-left py-2 px-2 font-semibold text-gray-600"></th>
+                        <th>Producto</th>
+                        <th>Categoría</th>
+                        <th>Precio</th>
+                        <th>Stock</th>
+                        <th>Talles</th>
+                        <th></th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for p in productos %}
-                    <tr class="border-b border-gray-100">
-                        <td class="py-2 px-2">{{ p.nombre }}</td>
-                        <td class="py-2 px-2">{{ p.categoria or '-' }}</td>
-                        <td class="py-2 px-2">${{ p.precio }}</td>
-                        <td class="py-2 px-2">{{ p.stock }}</td>
-                        <td class="py-2 px-2">
+                    <tr>
+                        <td class="font-medium">{{ p.nombre }}</td>
+                        <td>{{ p.subcategoria or p.categoria }}</td>
+                        <td class="text-green-600">${{ p.precio }}</td>
+                        <td>
+                            {% if p.stock <= 0 %}
+                            <span class="text-red-500">{{ p.stock }}</span>
+                            {% elif p.stock <= 5 %}
+                            <span class="text-orange-500">{{ p.stock }}</span>
+                            {% else %}
+                            {{ p.stock }}
+                            {% endif %}
+                        </td>
+                        <td class="text-xs">{{ p.talles or '-' }}</td>
+                        <td>
                             {% if current_user.role == 'admin' %}
-                            <a href="{{ url_for('eliminar_producto', id=p.id) }}" class="text-red-500 hover:text-red-700" onclick="return confirm('¿Eliminar {{ p.nombre }}?')">
+                            <a href="{{ url_for('eliminar_producto', id=p.id) }}" class="text-red-500 hover:text-red-700" onclick="return confirm('¿Eliminar?')">
                                 <i class="fas fa-trash"></i>
                             </a>
                             {% endif %}
@@ -111,50 +179,43 @@
                 </tbody>
             </table>
         </div>
-        {% else %}
-        <div class="text-center py-6 text-gray-400">
-            <p class="text-sm">No hay productos registrados</p>
-        </div>
-        {% endif %}
     </div>
 </div>
 
 <!-- Últimas Ventas -->
-<div class="bg-white rounded-lg shadow border border-gray-200 mt-5">
-    <div class="bg-gray-100 px-4 py-2 border-b border-gray-200">
-        <h3 class="text-md font-semibold text-gray-700">Últimas Ventas</h3>
+<div class="card mt-6">
+    <div class="card-header">
+        <h3 class="font-semibold text-gray-800">Últimas Ventas</h3>
     </div>
-    <div class="p-4">
-        {% if ventas %}
-        <div class="overflow-x-auto">
-            <table class="w-full text-sm">
-                <thead class="bg-gray-50 border-b">
+    <div class="card-body">
+        <div class="table-container">
+            <table class="w-full">
+                <thead>
                     <tr>
-                        <th class="text-left py-2 px-2 font-semibold text-gray-600">Fecha</th>
-                        <th class="text-left py-2 px-2 font-semibold text-gray-600">Producto</th>
-                        <th class="text-left py-2 px-2 font-semibold text-gray-600">Cant.</th>
-                        <th class="text-left py-2 px-2 font-semibold text-gray-600">Monto</th>
-                        <th class="text-left py-2 px-2 font-semibold text-gray-600">Vendedor</th>
+                        <th>Fecha</th>
+                        <th>Producto</th>
+                        <th>Alumno</th>
+                        <th>Cant.</th>
+                        <th>Talle</th>
+                        <th>Monto</th>
+                        <th>Vendedor</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for v in ventas %}
-                    <tr class="border-b border-gray-100">
-                        <td class="py-2 px-2 text-xs">{{ v.fecha.strftime('%d/%m/%Y %H:%M') }}</td>
-                        <td class="py-2 px-2">{{ v.producto_nombre }}</td>
-                        <td class="py-2 px-2">{{ v.cantidad }}</td>
-                        <td class="py-2 px-2">${{ v.monto }}</td>
-                        <td class="py-2 px-2 text-xs">{{ v.usuario.username if v.usuario else '-' }}</td>
+                    <tr>
+                        <td class="text-xs">{{ v.fecha.strftime('%d/%m/%Y %H:%M') }}</td>
+                        <td>{{ v.producto_nombre }}</td>
+                        <td>{{ v.alumno.nombre if v.alumno else 'Sin alumno' }}</td>
+                        <td>{{ v.cantidad }}</td>
+                        <td class="text-xs">{{ v.talle or '-' }}</td>
+                        <td class="font-medium text-green-600">${{ v.monto }}</td>
+                        <td class="text-xs">{{ v.usuario.username if v.usuario else '-' }}</td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
-        {% else %}
-        <div class="text-center py-6 text-gray-400">
-            <p class="text-sm">No hay ventas registradas aún</p>
-        </div>
-        {% endif %}
     </div>
 </div>
 {% endblock %}
