@@ -4,7 +4,7 @@ import pandas as pd
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, send_file
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
-from models import db, User, Alumno, Clase, AsistenciaClase, Producto, Venta, CajaDiaria, Configuracion, ConfiguracionSitio
+from models import db, User, Alumno, Clase, AsistenciaClase, Producto, Venta, CajaDiaria, Configuracion, ConfiguracionSitio, Gasto, Alquiler, PagoAlquiler, DashboardWidget, PreferenciaDashboard
 from datetime import datetime, date, timedelta
 from sqlalchemy import func, desc
 from io import BytesIO
@@ -74,7 +74,6 @@ def index():
     ultimas_ventas = Venta.query.order_by(Venta.fecha.desc()).limit(5).all()
     ultimos_alumnos = Alumno.query.order_by(Alumno.fecha_inscripcion.desc()).limit(5).all()
     
-    # Productos para venta rápida
     productos_destacados = Configuracion.get('productos_destacados', [])
     productos = []
     otros_productos = []
@@ -94,6 +93,12 @@ def index():
     ventas_semanales = get_ventas_semanales()
     top_productos = get_top_productos()
     
+    hoy = date.today()
+    gastos_mes = db.session.query(func.sum(Gasto.monto)).filter(
+        func.extract('month', Gasto.fecha) == hoy.month,
+        func.extract('year', Gasto.fecha) == hoy.year
+    ).scalar() or 0
+    
     stats = {
         'total_alumnos': total_alumnos,
         'total_alumnos_inactivos': total_alumnos_inactivos,
@@ -104,6 +109,7 @@ def index():
         'productos': productos,
         'otros_productos': otros_productos,
         'alumnos': alumnos,
+        'gastos_mes': gastos_mes
     }
     
     return render_template('dashboard.html', 
@@ -263,7 +269,7 @@ def alumno_compras(id):
     ventas = Venta.query.filter_by(alumno_id=id).order_by(Venta.fecha.desc()).all()
     return render_template('alumno_compras.html', alumno=alumno, ventas=ventas)
 
-# ====================== IMPORTACIÓN MASIVA DE ALUMNOS ======================
+# ====================== IMPORTACIÓN MASIVA ======================
 
 @app.route('/alumnos/importar', methods=['POST'])
 @login_required
@@ -287,11 +293,8 @@ def importar_alumnos_excel():
     
     try:
         df = pd.read_excel(archivo)
-        
-        # Normalizar nombres de columnas
         df.columns = df.columns.str.strip().str.lower()
         
-        # Verificar columnas requeridas
         columnas_requeridas = ['nombre', 'dni']
         for col in columnas_requeridas:
             if col not in df.columns:
@@ -310,7 +313,6 @@ def importar_alumnos_excel():
                     errores.append(f"Fila {idx+2}: Nombre o DNI vacío")
                     continue
                 
-                # Verificar si el alumno ya existe
                 existe = Alumno.query.filter_by(dni=dni).first()
                 if existe:
                     errores.append(f"Fila {idx+2}: DNI {dni} ya existe como {existe.nombre}")
@@ -349,7 +351,6 @@ def importar_alumnos_excel():
 @app.route('/alumnos/plantilla')
 @login_required
 def descargar_plantilla_alumnos():
-    # Crear plantilla de ejemplo
     datos = {
         'nombre': ['Juan Pérez', 'María García'],
         'dni': ['12345678', '87654321'],
@@ -753,6 +754,196 @@ def cierre_caja():
     flash(f'Caja cerrada. Ventas: ${ventas_hoy} - Total: ${monto_final}', 'success')
     return redirect(url_for('caja'))
 
+# ====================== GASTOS ======================
+
+@app.route('/gastos')
+@login_required
+def gastos():
+    if current_user.role != 'admin':
+        flash('Solo administradores', 'error')
+        return redirect(url_for('index'))
+    
+    gastos_lista = Gasto.query.order_by(Gasto.fecha.desc()).all()
+    categorias = ['Alquiler', 'Sueldos', 'Servicios', 'Mantenimiento', 'Insumos', 'Publicidad', 'Otros']
+    
+    hoy = date.today()
+    gastos_mes = db.session.query(func.sum(Gasto.monto)).filter(
+        func.extract('month', Gasto.fecha) == hoy.month,
+        func.extract('year', Gasto.fecha) == hoy.year
+    ).scalar() or 0
+    
+    return render_template('gastos_gym.html', gastos=gastos_lista, categorias=categorias, total_mes=gastos_mes)
+
+@app.route('/gastos/nuevo', methods=['POST'])
+@login_required
+def nuevo_gasto():
+    if current_user.role != 'admin':
+        flash('Solo administradores', 'error')
+        return redirect(url_for('gastos'))
+    
+    try:
+        nuevo = Gasto(
+            categoria=request.form['categoria'],
+            descripcion=request.form['descripcion'],
+            monto=float(request.form['monto']),
+            fecha=datetime.strptime(request.form['fecha'], '%Y-%m-%d').date() if request.form.get('fecha') else date.today(),
+            comprobante=request.form.get('comprobante', ''),
+            proveedor=request.form.get('proveedor', ''),
+            usuario_id=current_user.id
+        )
+        db.session.add(nuevo)
+        db.session.commit()
+        flash('Gasto registrado correctamente', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error: {str(e)}', 'error')
+    
+    return redirect(url_for('gastos'))
+
+@app.route('/gastos/eliminar/<int:id>')
+@login_required
+def eliminar_gasto(id):
+    if current_user.role != 'admin':
+        flash('Solo administradores', 'error')
+        return redirect(url_for('gastos'))
+    
+    gasto = Gasto.query.get_or_404(id)
+    db.session.delete(gasto)
+    db.session.commit()
+    flash('Gasto eliminado', 'success')
+    return redirect(url_for('gastos'))
+
+# ====================== ALQUILER ======================
+
+@app.route('/alquiler')
+@login_required
+def alquiler():
+    if current_user.role != 'admin':
+        flash('Solo administradores', 'error')
+        return redirect(url_for('index'))
+    
+    alquileres = Alquiler.query.filter_by(activo=True).all()
+    historial_pagos = PagoAlquiler.query.order_by(PagoAlquiler.anio.desc(), PagoAlquiler.mes.desc()).limit(50).all()
+    
+    hoy = date.today()
+    proximo_vencimiento = None
+    alquiler_actual = Alquiler.query.filter_by(activo=True).first()
+    
+    if alquiler_actual:
+        fecha_vencimiento = date(hoy.year, hoy.month, alquiler_actual.dia_vencimiento)
+        if fecha_vencimiento < hoy:
+            if hoy.month == 12:
+                fecha_vencimiento = date(hoy.year + 1, 1, alquiler_actual.dia_vencimiento)
+            else:
+                fecha_vencimiento = date(hoy.year, hoy.month + 1, alquiler_actual.dia_vencimiento)
+        proximo_vencimiento = fecha_vencimiento
+    
+    return render_template('alquiler.html', alquileres=alquileres, pagos=historial_pagos, proximo_vencimiento=proximo_vencimiento)
+
+@app.route('/alquiler/nuevo', methods=['POST'])
+@login_required
+def nuevo_alquiler():
+    if current_user.role != 'admin':
+        flash('Solo administradores', 'error')
+        return redirect(url_for('alquiler'))
+    
+    try:
+        nuevo = Alquiler(
+            propietario=request.form['propietario'],
+            direccion=request.form.get('direccion', ''),
+            monto_mensual=float(request.form['monto_mensual']),
+            fecha_inicio=datetime.strptime(request.form['fecha_inicio'], '%Y-%m-%d').date(),
+            fecha_vencimiento=datetime.strptime(request.form['fecha_vencimiento'], '%Y-%m-%d').date(),
+            dia_vencimiento=int(request.form.get('dia_vencimiento', 5)),
+            observaciones=request.form.get('observaciones', '')
+        )
+        db.session.add(nuevo)
+        db.session.commit()
+        flash('Contrato de alquiler registrado', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error: {str(e)}', 'error')
+    
+    return redirect(url_for('alquiler'))
+
+@app.route('/alquiler/pagar', methods=['POST'])
+@login_required
+def pagar_alquiler():
+    if current_user.role != 'admin':
+        flash('Solo administradores', 'error')
+        return redirect(url_for('alquiler'))
+    
+    try:
+        alquiler_id = int(request.form['alquiler_id'])
+        mes = int(request.form['mes'])
+        anio = int(request.form['anio'])
+        monto = float(request.form['monto'])
+        comprobante = request.form.get('comprobante', '')
+        
+        existe = PagoAlquiler.query.filter_by(alquiler_id=alquiler_id, mes=mes, anio=anio).first()
+        if existe:
+            flash('Este mes ya fue pagado', 'warning')
+            return redirect(url_for('alquiler'))
+        
+        pago = PagoAlquiler(
+            alquiler_id=alquiler_id,
+            mes=mes,
+            anio=anio,
+            monto=monto,
+            comprobante=comprobante
+        )
+        db.session.add(pago)
+        db.session.commit()
+        
+        gasto = Gasto(
+            categoria='Alquiler',
+            descripcion=f'Alquiler {mes}/{anio}',
+            monto=monto,
+            fecha=date.today(),
+            comprobante=comprobante,
+            usuario_id=current_user.id
+        )
+        db.session.add(gasto)
+        db.session.commit()
+        
+        flash(f'Pago de alquiler {mes}/{anio} registrado', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error: {str(e)}', 'error')
+    
+    return redirect(url_for('alquiler'))
+
+# ====================== DASHBOARD PERSONALIZABLE ======================
+
+@app.route('/dashboard/configurar', methods=['GET', 'POST'])
+@login_required
+def configurar_dashboard():
+    widgets = DashboardWidget.query.order_by(DashboardWidget.orden_por_defecto).all()
+    preferencias = {p.widget_id: p for p in PreferenciaDashboard.query.filter_by(usuario_id=current_user.id).all()}
+    
+    if request.method == 'POST':
+        for widget in widgets:
+            visible = request.form.get(f'widget_{widget.id}_visible') == 'on'
+            orden = int(request.form.get(f'widget_{widget.id}_orden', widget.orden_por_defecto))
+            
+            pref = preferencias.get(widget.id)
+            if pref:
+                pref.visible = visible
+                pref.orden = orden
+            else:
+                pref = PreferenciaDashboard(
+                    usuario_id=current_user.id,
+                    widget_id=widget.id,
+                    visible=visible,
+                    orden=orden
+                )
+                db.session.add(pref)
+        db.session.commit()
+        flash('Configuración del dashboard guardada', 'success')
+        return redirect(url_for('index'))
+    
+    return render_template('configurar_dashboard.html', widgets=widgets, preferencias=preferencias)
+
 # ====================== REPORTES ======================
 
 @app.route('/reportes')
@@ -809,13 +1000,19 @@ def reportes():
         func.count(Venta.id).label('total_compras')
     ).join(Venta, Venta.alumno_id == Alumno.id).group_by(Alumno.id).order_by(func.sum(Venta.monto).desc()).limit(10).all()
     
+    gastos_por_categoria = db.session.query(
+        Gasto.categoria,
+        func.sum(Gasto.monto).label('total')
+    ).group_by(Gasto.categoria).order_by(func.sum(Gasto.monto).desc()).all()
+    
     return render_template('reportes.html', 
                           ventas_dias=ventas_dias,
                           ventas_categoria=ventas_categoria,
                           top_productos=top_productos,
                           alumnos_clase=alumnos_clase,
                           ventas_meses=ventas_meses,
-                          top_clientes=top_clientes)
+                          top_clientes=top_clientes,
+                          gastos_por_categoria=gastos_por_categoria)
 
 @app.route('/reportes/exportar')
 @login_required
@@ -827,6 +1024,7 @@ def exportar_reportes():
     ventas = Venta.query.order_by(Venta.fecha.desc()).limit(500).all()
     alumnos = Alumno.query.all()
     productos = Producto.query.all()
+    gastos = Gasto.query.order_by(Gasto.fecha.desc()).limit(500).all()
     
     df_ventas = pd.DataFrame([{
         'Fecha': v.fecha.strftime('%d/%m/%Y %H:%M'),
@@ -857,11 +1055,21 @@ def exportar_reportes():
         'Talles': p.talles
     } for p in productos])
     
+    df_gastos = pd.DataFrame([{
+        'Fecha': g.fecha.strftime('%d/%m/%Y'),
+        'Categoría': g.categoria,
+        'Descripción': g.descripcion,
+        'Monto': g.monto,
+        'Proveedor': g.proveedor or '-',
+        'Comprobante': g.comprobante or '-'
+    } for g in gastos])
+    
     output = BytesIO()
     with pd.ExcelWriter(output, engine='openpyxl') as writer:
         df_ventas.to_excel(writer, sheet_name='Ventas', index=False)
         df_alumnos.to_excel(writer, sheet_name='Alumnos', index=False)
         df_productos.to_excel(writer, sheet_name='Productos', index=False)
+        df_gastos.to_excel(writer, sheet_name='Gastos', index=False)
     
     output.seek(0)
     return send_file(output, download_name=f'reporte_boxfit_{date.today()}.xlsx', as_attachment=True)
@@ -953,6 +1161,29 @@ def configuracion_sitio():
 
 # ====================== INICIALIZACIÓN ======================
 
+def init_dashboard_widgets():
+    widgets_default = [
+        {'nombre': 'stats_totales', 'titulo': 'Estadísticas Principales', 'icono': 'fas fa-chart-line', 'orden': 1},
+        {'nombre': 'grafico_ventas', 'titulo': 'Ventas Últimos 7 Días', 'icono': 'fas fa-chart-bar', 'orden': 2},
+        {'nombre': 'top_productos', 'titulo': 'Top 5 Productos', 'icono': 'fas fa-trophy', 'orden': 3},
+        {'nombre': 'venta_rapida', 'titulo': 'Venta Rápida', 'icono': 'fas fa-cart-plus', 'orden': 4},
+        {'nombre': 'ultimos_alumnos', 'titulo': 'Últimos Alumnos', 'icono': 'fas fa-users', 'orden': 5},
+        {'nombre': 'ultimas_ventas', 'titulo': 'Últimas Ventas', 'icono': 'fas fa-receipt', 'orden': 6},
+        {'nombre': 'gastos_mes', 'titulo': 'Gastos del Mes', 'icono': 'fas fa-money-bill-wave', 'orden': 7},
+    ]
+    
+    for w in widgets_default:
+        if not DashboardWidget.query.filter_by(nombre=w['nombre']).first():
+            widget = DashboardWidget(
+                nombre=w['nombre'],
+                titulo=w['titulo'],
+                icono=w['icono'],
+                visible_por_defecto=True,
+                orden_por_defecto=w['orden']
+            )
+            db.session.add(widget)
+    db.session.commit()
+
 @app.cli.command("init-db")
 def init_db():
     db.create_all()
@@ -962,6 +1193,8 @@ def init_db():
         db.session.add(admin)
         db.session.commit()
         print(">>> Usuario admin creado: admin / admin123")
+    
+    init_dashboard_widgets()
     
     if Producto.query.count() == 0:
         productos = [
@@ -1001,6 +1234,7 @@ if __name__ == '__main__':
             admin = User(username='admin', password=generate_password_hash('admin123'), role='admin')
             db.session.add(admin)
             db.session.commit()
+        init_dashboard_widgets()
     
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port)
