@@ -139,6 +139,9 @@
         <a href="{{ url_for('configuracion_sitio') }}" class="{% if request.endpoint == 'configuracion_sitio' %}active{% endif %}">
             <i class="fas fa-palette" style="width:20px; margin-right:12px;"></i> Personalizar
         </a>
+        <a href="{{ url_for('configuracion') }}" class="{% if request.endpoint == 'configuracion' %}active{% endif %}">
+            <i class="fas fa-star" style="width:20px; margin-right:12px;"></i> Productos Destacados
+        </a>
         {% endif %}
         <a href="{{ url_for('reportes') }}" class="{% if request.endpoint == 'reportes' %}active{% endif %}">
             <i class="fas fa-chart-bar" style="width:20px; margin-right:12px;"></i> Reportes

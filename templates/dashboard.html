@@ -3,107 +3,176 @@
 
 {% block content %}
 <div class="mb-5">
-    <h2 class="text-xl font-semibold text-gray-800 dark:text-white">Dashboard</h2>
-    <p class="text-gray-500 dark:text-gray-400 text-sm">Bienvenido, {{ current_user.username }}</p>
+    <div class="flex justify-between items-center">
+        <div>
+            <h2 class="text-xl font-semibold dark:text-white">Dashboard</h2>
+            <p class="text-gray-500 text-sm">Bienvenido, {{ current_user.username }}</p>
+        </div>
+        {% if current_user.role == 'admin' %}
+        <a href="{{ url_for('configurar_dashboard') }}" class="text-blue-500 text-sm hover:underline">
+            <i class="fas fa-sliders-h"></i> Personalizar
+        </a>
+        {% endif %}
+    </div>
 </div>
 
-<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
     <div class="stat-card">
         <div class="flex items-center justify-between">
-            <div><p class="text-gray-500 text-xs">Total Alumnos</p><p class="text-2xl font-bold dark:text-white">{{ stats.total_alumnos }}</p></div>
+            <div><p class="text-gray-500 text-xs">Total Alumnos</p><p class="text-2xl font-bold">{{ stats.total_alumnos }}</p></div>
             <i class="fas fa-users text-2xl text-blue-400"></i>
         </div>
     </div>
     <div class="stat-card">
         <div class="flex items-center justify-between">
-            <div><p class="text-gray-500 text-xs">Alumnos Inactivos</p><p class="text-2xl font-bold dark:text-white">{{ stats.total_alumnos_inactivos }}</p></div>
+            <div><p class="text-gray-500 text-xs">Alumnos Inactivos</p><p class="text-2xl font-bold">{{ stats.total_alumnos_inactivos }}</p></div>
             <i class="fas fa-user-slash text-2xl text-orange-400"></i>
         </div>
     </div>
     <div class="stat-card">
         <div class="flex items-center justify-between">
-            <div><p class="text-gray-500 text-xs">Ventas Hoy</p><p class="text-2xl font-bold dark:text-white">{{ stats.total_ventas_hoy }}</p></div>
+            <div><p class="text-gray-500 text-xs">Ventas Hoy</p><p class="text-2xl font-bold">{{ stats.total_ventas_hoy }}</p></div>
             <i class="fas fa-shopping-cart text-2xl text-green-400"></i>
         </div>
+        <p class="text-xs text-green-600">${{ "%.0f"|format(stats.monto_ventas_hoy) }}</p>
     </div>
     <div class="stat-card">
         <div class="flex items-center justify-between">
-            <div><p class="text-gray-500 text-xs">Monto Ventas</p><p class="text-2xl font-bold dark:text-white">${{ "%.0f"|format(stats.monto_ventas_hoy) }}</p></div>
-            <i class="fas fa-dollar-sign text-2xl text-yellow-500"></i>
+            <div><p class="text-gray-500 text-xs">Gastos Mes</p><p class="text-2xl font-bold text-red-600">${{ "%.0f"|format(stats.gastos_mes) }}</p></div>
+            <i class="fas fa-money-bill-wave text-2xl text-red-400"></i>
         </div>
+    </div>
+</div>
+
+<!-- Venta Rápida -->
+<div class="card mb-6 border-2 border-green-500">
+    <div class="card-header bg-green-50 dark:bg-green-900/30">
+        <div class="flex items-center gap-2">
+            <i class="fas fa-bolt text-yellow-500 text-xl"></i>
+            <h3 class="font-semibold text-lg">⚡ Venta Rápida</h3>
+        </div>
+        {% if current_user.role == 'admin' %}
+        <a href="{{ url_for('configuracion') }}" class="text-blue-500 text-sm hover:underline">
+            <i class="fas fa-cog"></i> Configurar productos
+        </a>
+        {% endif %}
+    </div>
+    <div class="card-body">
+        <form method="POST" action="{{ url_for('venta_rapida') }}">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="form-label">👤 Alumno (opcional)</label>
+                    <select name="alumno_id" class="form-control">
+                        <option value="">Sin alumno asignado</option>
+                        {% for a in stats.alumnos %}
+                        <option value="{{ a.id }}">{{ a.nombre }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="form-label">📦 Producto *</label>
+                    <select name="producto_id" required class="form-control">
+                        <option value="">Seleccionar producto</option>
+                        {% for p in stats.productos %}
+                        <option value="{{ p.id }}">{{ p.nombre }} - ${{ p.precio }} (Stock: {{ p.stock }})</option>
+                        {% endfor %}
+                        {% for p in stats.otros_productos %}
+                        <option value="{{ p.id }}">{{ p.nombre }} - ${{ p.precio }} (Stock: {{ p.stock }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="form-label">🔢 Cantidad</label>
+                    <input type="number" name="cantidad" value="1" min="1" class="form-control">
+                </div>
+                <div>
+                    <label class="form-label">📏 Talle</label>
+                    <input type="text" name="talle" placeholder="S, M, L, XL" class="form-control">
+                </div>
+            </div>
+            <div class="mt-4">
+                <button type="submit" class="btn btn-success w-full py-3 text-lg">
+                    <i class="fas fa-cart-plus"></i> Registrar Venta
+                </button>
+            </div>
+        </form>
     </div>
 </div>
 
 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
     <div class="card">
-        <div class="card-header"><h3 class="font-semibold dark:text-white">Ventas Últimos 7 Días</h3></div>
+        <div class="card-header"><h3 class="font-semibold">Ventas Últimos 7 Días</h3></div>
         <div class="card-body">
             <canvas id="ventasChart" height="200"></canvas>
         </div>
     </div>
     <div class="card">
-        <div class="card-header"><h3 class="font-semibold dark:text-white">Top 5 Productos</h3></div>
+        <div class="card-header"><h3 class="font-semibold">Top 5 Productos</h3></div>
         <div class="card-body">
             <canvas id="topProductosChart" height="200"></canvas>
         </div>
     </div>
 </div>
 
-<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
     <div class="card">
-        <div class="card-header"><h3 class="font-semibold dark:text-white">Venta Rápida</h3></div>
-        <div class="card-body">
-            <form method="POST" action="{{ url_for('venta_rapida') }}">
-                <div class="form-group">
-                    <label class="form-label">Alumno (opcional)</label>
-                    <select name="alumno_id" class="form-control"><option value="">Sin alumno asignado</option>{% for a in stats.alumnos %}<option value="{{ a.id }}">{{ a.nombre }} - {{ a.clase or 'Sin clase' }}</option>{% endfor %}</select>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Producto</label>
-                    <select name="producto_id" required class="form-control"><option value="">Seleccionar producto</option>{% for p in stats.productos %}<option value="{{ p.id }}">{{ p.nombre }} - ${{ p.precio }} (Stock: {{ p.stock }})</option>{% endfor %}</select>
-                </div>
-                <div class="grid grid-cols-2 gap-3">
-                    <div class="form-group"><label class="form-label">Cantidad</label><input type="number" name="cantidad" value="1" min="1" class="form-control"></div>
-                    <div class="form-group"><label class="form-label">Talle</label><input type="text" name="talle" placeholder="S, M, L, XL" class="form-control"></div>
-                </div>
-                <button type="submit" class="btn btn-success w-full justify-center"><i class="fas fa-cart-plus"></i> Registrar Venta</button>
-            </form>
-        </div>
-    </div>
-    
-    <div class="card">
-        <div class="card-header"><h3 class="font-semibold dark:text-white">Últimos Alumnos</h3><a href="{{ url_for('alumnos') }}" class="text-blue-500 text-sm">Ver todos</a></div>
+        <div class="card-header"><h3 class="font-semibold">Últimos Alumnos</h3><a href="{{ url_for('alumnos') }}" class="text-blue-500 text-sm">Ver todos</a></div>
         <div class="card-body">
             {% for a in stats.ultimos_alumnos %}
-            <div class="flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-700">
-                <div><p class="text-sm font-medium dark:text-white">{{ a.nombre }}</p><p class="text-xs text-gray-500">{{ a.clase or 'Sin clase' }} • {{ a.fecha_inscripcion.strftime('%d/%m/%Y') }}</p></div>
+            <div class="flex items-center justify-between py-2 border-b">
+                <div>
+                    <p class="font-medium">{{ a.nombre }}</p>
+                    <p class="text-xs text-gray-500">{{ a.clase or 'Sin clase' }} • {{ a.fecha_inscripcion.strftime('%d/%m/%Y') }}</p>
+                </div>
                 <div class="flex gap-2">
-                    <a href="https://wa.me/{{ a.telefono }}" target="_blank" class="text-green-500" title="WhatsApp"><i class="fab fa-whatsapp"></i></a>
-                    <a href="{{ url_for('alumno_compras', id=a.id) }}" class="text-blue-500" title="Ver compras"><i class="fas fa-shopping-bag"></i></a>
+                    <a href="https://wa.me/{{ a.telefono }}" target="_blank" class="text-green-500"><i class="fab fa-whatsapp"></i></a>
+                    <a href="{{ url_for('alumno_compras', id=a.id) }}" class="text-blue-500"><i class="fas fa-shopping-bag"></i></a>
                 </div>
             </div>
             {% endfor %}
         </div>
     </div>
-</div>
-
-<div class="card">
-    <div class="card-header"><h3 class="font-semibold dark:text-white">Últimas Ventas</h3><a href="{{ url_for('ventas') }}" class="text-blue-500 text-sm">Ver todas</a></div>
-    <div class="card-body">
-        <div class="table-container">
-            <table class="w-full">
-                <thead><tr><th>Fecha</th><th>Producto</th><th>Alumno</th><th>Cant.</th><th>Monto</th><th>Vendedor</th><th></th></tr></thead>
-                <tbody>{% for v in stats.ultimas_ventas %}<tr><td class="text-xs">{{ v.fecha.strftime('%d/%m/%Y %H:%M') }}</td><td>{{ v.producto_nombre }}</td><td>{{ v.alumno.nombre if v.alumno else 'Sin alumno' }}</td><td>{{ v.cantidad }}</td><td class="font-medium text-green-600">${{ v.monto }}</td><td class="text-xs">{{ v.usuario.username if v.usuario else '-' }}</td><td><button onclick="window.open('/ticket/{{ v.id }}', '_blank', 'width=400,height=600')" class="text-gray-500 hover:text-gray-700"><i class="fas fa-print"></i></button></td></tr>{% endfor %}</tbody>
-            </table>
+    
+    <div class="card">
+        <div class="card-header"><h3 class="font-semibold">Últimas Ventas</h3><a href="{{ url_for('ventas') }}" class="text-blue-500 text-sm">Ver todas</a></div>
+        <div class="card-body">
+            <div class="table-container">
+                <table class="w-full">
+                    <thead><tr><th>Fecha</th><th>Producto</th><th>Alumno</th><th>Monto</th><th></th></tr></thead>
+                    <tbody>
+                    {% for v in stats.ultimas_ventas %}
+                    <tr>
+                        <td class="text-xs">{{ v.fecha.strftime('%d/%m %H:%M') }}</td>
+                        <td class="text-sm">{{ v.producto_nombre }}</td>
+                        <td class="text-sm">{{ v.alumno.nombre if v.alumno else '-' }}</td>
+                        <td class="text-green-600">${{ v.monto }}</td>
+                        <td><button onclick="window.open('/ticket/{{ v.id }}', '_blank', 'width=400,height=600')" class="text-gray-500"><i class="fas fa-print"></i></button></td>
+                    </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-    const ventasSemanales = {{ ventas_semanales | tojson | safe }};
-    const topProductos = {{ top_productos_json | tojson | safe }};
-    new Chart(document.getElementById('ventasChart'), {type:'line', data:{labels:ventasSemanales.map(v=>v.dia), datasets:[{label:'Ventas ($)', data:ventasSemanales.map(v=>v.total), borderColor:'#10b981', backgroundColor:'rgba(16,185,129,0.1)', tension:0.4, fill:true}]}, options:{responsive:true, maintainAspectRatio:true}});
-    new Chart(document.getElementById('topProductosChart'), {type:'bar', data:{labels:topProductos.map(p=>p.nombre), datasets:[{label:'Cantidad Vendida', data:topProductos.map(p=>p.cantidad), backgroundColor:'#3b82f6', borderRadius:8}]}, options:{responsive:true, maintainAspectRatio:true}});
+    const ventasData = {{ ventas_semanales | tojson | safe }};
+    const topData = {{ top_productos_json | tojson | safe }};
+    
+    new Chart(document.getElementById('ventasChart'), {
+        type: 'line',
+        data: { labels: ventasData.map(v => v.dia), datasets: [{ label: 'Ventas ($)', data: ventasData.map(v => v.total), borderColor: '#10b981', fill: true, tension: 0.4 }] },
+        options: { responsive: true }
+    });
+    
+    if (topData.length > 0) {
+        new Chart(document.getElementById('topProductosChart'), {
+            type: 'bar',
+            data: { labels: topData.map(p => p.nombre), datasets: [{ label: 'Cantidad Vendida', data: topData.map(p => p.cantidad), backgroundColor: '#3b82f6' }] },
+            options: { responsive: true }
+        });
+    }
 </script>
 {% endblock %}

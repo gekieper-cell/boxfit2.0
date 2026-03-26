@@ -772,7 +772,7 @@ def gastos():
         func.extract('year', Gasto.fecha) == hoy.year
     ).scalar() or 0
     
-    return render_template('gastos_gym.html', gastos=gastos_lista, categorias=categorias, total_mes=gastos_mes)
+    return render_template('gastos_gym.html', gastos=gastos_lista, categorias=categorias, total_mes=gastos_mes, now=datetime.now())
 
 @app.route('/gastos/nuevo', methods=['POST'])
 @login_required
@@ -838,7 +838,7 @@ def alquiler():
                 fecha_vencimiento = date(hoy.year, hoy.month + 1, alquiler_actual.dia_vencimiento)
         proximo_vencimiento = fecha_vencimiento
     
-    return render_template('alquiler.html', alquileres=alquileres, pagos=historial_pagos, proximo_vencimiento=proximo_vencimiento)
+    return render_template('alquiler.html', alquileres=alquileres, pagos=historial_pagos, proximo_vencimiento=proximo_vencimiento, now=datetime.now())
 
 @app.route('/alquiler/nuevo', methods=['POST'])
 @login_required

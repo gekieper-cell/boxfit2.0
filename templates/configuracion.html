@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}Productos Destacados{% endblock %}
+
+{% block content %}
+<div class="mb-5"><h2 class="text-xl font-semibold dark:text-white">Productos Destacados</h2><p class="text-gray-500 text-sm">Selecciona los productos que aparecerán en la venta rápida del dashboard</p></div>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div class="card"><div class="card-header"><h3 class="font-semibold">Seleccionar Productos</h3></div><div class="card-body"><form method="POST" action="{{ url_for('guardar_configuracion') }}"><div class="space-y-2 max-h-96 overflow-y-auto">{% for p in todos_productos %}<label class="flex items-center gap-3 p-2 hover:bg-gray-50 rounded cursor-pointer"><input type="checkbox" name="productos_destacados" value="{{ p.id }}" {% for dp in productos_destacados %}{% if dp.id == p.id %}checked{% endif %}{% endfor %} class="w-4 h-4"><span>{{ p.nombre }}</span><span class="text-xs text-gray-500 ml-auto">${{ p.precio }} | Stock: {{ p.stock }}</span></label>{% endfor %}</div><div class="flex gap-3 mt-4"><button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Guardar</button><a href="{{ url_for('reset_configuracion') }}" class="btn btn-outline" onclick="return confirm('¿Restablecer?')"><i class="fas fa-undo"></i> Restablecer</a></div></form></div></div>
+    
+    <div class="card"><div class="card-header"><h3 class="font-semibold">Vista Previa</h3></div><div class="card-body"><div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-4"><div class="space-y-2">{% for p in todos_productos[:5] %}<div class="flex items-center justify-between py-1 border-b"><div class="flex items-center gap-2"><input type="checkbox" class="w-3 h-3" disabled {% for dp in productos_destacados %}{% if dp.id == p.id %}checked{% endif %}{% endfor %}><span>{{ p.nombre }}</span></div><span class="text-green-600">${{ p.precio }}</span></div>{% endfor %}</div><p class="text-xs text-gray-500 mt-3">Los productos seleccionados aparecerán con ⭐ en venta rápida</p></div></div></div>
+</div>
+{% endblock %}

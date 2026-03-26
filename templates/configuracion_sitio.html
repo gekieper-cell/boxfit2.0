@@ -2,87 +2,9 @@
 {% block title %}Personalizar Sitio{% endblock %}
 
 {% block content %}
-<div class="mb-5">
-    <h2 class="text-xl font-semibold dark:text-white">Personalizar Sitio</h2>
-    <p class="text-gray-500 text-sm">Cambia el nombre, logo y colores de tu sistema</p>
-</div>
+<div class="mb-5"><h2 class="text-xl font-semibold dark:text-white">Personalizar Sitio</h2><p class="text-gray-500 text-sm">Cambia el nombre, logo y colores del sistema</p></div>
 
-<div class="card">
-    <div class="card-header">
-        <h3 class="font-semibold">Configuración Visual</h3>
-    </div>
-    <div class="card-body">
-        <form method="POST">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div class="form-group">
-                    <label class="form-label">Nombre del Gimnasio</label>
-                    <input type="text" name="nombre_sitio" value="{{ config.nombre_sitio }}" class="form-control">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Logo / Ícono</label>
-                    <input type="text" name="logo_icono" value="{{ config.logo_icono }}" class="form-control" placeholder="🥊">
-                    <small class="text-gray-500 text-xs">Puedes usar emojis o texto</small>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Color Principal</label>
-                    <input type="color" name="color_principal" value="{{ config.color_principal }}" class="form-control" style="height: 45px;">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Color Secundario</label>
-                    <input type="color" name="color_secundario" value="{{ config.color_secundario }}" class="form-control" style="height: 45px;">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Favicon (ícono de pestaña)</label>
-                    <input type="text" name="favicon" value="{{ config.favicon }}" class="form-control" placeholder="🥊">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Título de la Página</label>
-                    <input type="text" name="titulo_pagina" value="{{ config.titulo_pagina }}" class="form-control">
-                </div>
-                <div class="form-group md:col-span-2">
-                    <label class="form-label">Frase de Bienvenida</label>
-                    <input type="text" name="frase_bienvenida" value="{{ config.frase_bienvenida }}" class="form-control">
-                </div>
-            </div>
-            
-            <div class="mt-4">
-                <h4 class="font-semibold mb-2">Vista Previa</h4>
-                <div class="p-4 border rounded-lg bg-gray-50 dark:bg-gray-800">
-                    <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 rounded-lg flex items-center justify-center" style="background: {{ config.color_principal }};">
-                            <span style="font-size: 20px;">{{ config.logo_icono }}</span>
-                        </div>
-                        <div>
-                            <h3 style="color: {{ config.color_principal }};" class="font-bold text-lg">{{ config.nombre_sitio }}</h3>
-                            <p class="text-sm text-gray-500">{{ config.frase_bienvenida }}</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="mt-4 flex gap-3">
-                <button type="submit" class="btn btn-primary">Guardar Configuración</button>
-                <a href="{{ url_for('index') }}" class="btn btn-outline">Volver al Dashboard</a>
-            </div>
-        </form>
-    </div>
-</div>
+<div class="card"><div class="card-header"><h3 class="font-semibold">Configuración Visual</h3></div><div class="card-body"><form method="POST"><div class="grid grid-cols-1 md:grid-cols-2 gap-4"><div class="form-group"><label class="form-label">Nombre del Gimnasio</label><input type="text" name="nombre_sitio" value="{{ config.nombre_sitio }}" class="form-control"></div><div class="form-group"><label class="form-label">Logo / Ícono</label><input type="text" name="logo_icono" value="{{ config.logo_icono }}" class="form-control" placeholder="🥊"></div><div class="form-group"><label class="form-label">Color Principal</label><input type="color" name="color_principal" value="{{ config.color_principal }}" class="form-control" style="height:45px"></div><div class="form-group"><label class="form-label">Color Secundario</label><input type="color" name="color_secundario" value="{{ config.color_secundario }}" class="form-control" style="height:45px"></div><div class="form-group"><label class="form-label">Favicon</label><input type="text" name="favicon" value="{{ config.favicon }}" class="form-control"></div><div class="form-group"><label class="form-label">Título de Página</label><input type="text" name="titulo_pagina" value="{{ config.titulo_pagina }}" class="form-control"></div><div class="form-group md:col-span-2"><label class="form-label">Frase de Bienvenida</label><input type="text" name="frase_bienvenida" value="{{ config.frase_bienvenida }}" class="form-control"></div></div><div class="mt-4"><h4 class="font-semibold mb-2">Vista Previa</h4><div class="p-4 border rounded-lg bg-gray-50 dark:bg-gray-800"><div class="flex items-center gap-3"><div class="w-10 h-10 rounded-lg flex items-center justify-center" style="background: {{ config.color_principal }};"><span style="font-size:20px">{{ config.logo_icono }}</span></div><div><h3 style="color: {{ config.color_principal }};" class="font-bold text-lg">{{ config.nombre_sitio }}</h3><p class="text-sm text-gray-500">{{ config.frase_bienvenida }}</p></div></div></div></div><div class="mt-4 flex gap-3"><button type="submit" class="btn btn-primary">Guardar</button><a href="{{ url_for('index') }}" class="btn btn-outline">Volver</a></div></form></div></div>
 
-<div class="card mt-4">
-    <div class="card-header">
-        <h3 class="font-semibold">Emojis Sugeridos</h3>
-    </div>
-    <div class="card-body">
-        <div class="grid grid-cols-4 md:grid-cols-8 gap-2 text-center">
-            <div class="p-2 border rounded text-2xl cursor-pointer" onclick="document.querySelector('input[name=logo_icono]').value='🥊'">🥊</div>
-            <div class="p-2 border rounded text-2xl cursor-pointer" onclick="document.querySelector('input[name=logo_icono]').value='💪'">💪</div>
-            <div class="p-2 border rounded text-2xl cursor-pointer" onclick="document.querySelector('input[name=logo_icono]').value='🏋️'">🏋️</div>
-            <div class="p-2 border rounded text-2xl cursor-pointer" onclick="document.querySelector('input[name=logo_icono]').value='🤼'">🤼</div>
-            <div class="p-2 border rounded text-2xl cursor-pointer" onclick="document.querySelector('input[name=logo_icono]').value='🎯'">🎯</div>
-            <div class="p-2 border rounded text-2xl cursor-pointer" onclick="document.querySelector('input[name=logo_icono]').value='⚡'">⚡</div>
-            <div class="p-2 border rounded text-2xl cursor-pointer" onclick="document.querySelector('input[name=logo_icono]').value='🔥'">🔥</div>
-            <div class="p-2 border rounded text-2xl cursor-pointer" onclick="document.querySelector('input[name=logo_icono]').value='👊'">👊</div>
-        </div>
-    </div>
-</div>
+<div class="card mt-4"><div class="card-header"><h3 class="font-semibold">Emojis Sugeridos</h3></div><div class="card-body"><div class="grid grid-cols-4 md:grid-cols-8 gap-2 text-center cursor-pointer"><div class="p-2 border rounded text-2xl" onclick="document.querySelector('input[name=logo_icono]').value='🥊'">🥊</div><div class="p-2 border rounded text-2xl" onclick="document.querySelector('input[name=logo_icono]').value='💪'">💪</div><div class="p-2 border rounded text-2xl" onclick="document.querySelector('input[name=logo_icono]').value='🏋️'">🏋️</div><div class="p-2 border rounded text-2xl" onclick="document.querySelector('input[name=logo_icono]').value='🤼'">🤼</div><div class="p-2 border rounded text-2xl" onclick="document.querySelector('input[name=logo_icono]').value='🎯'">🎯</div><div class="p-2 border rounded text-2xl" onclick="document.querySelector('input[name=logo_icono]').value='⚡'">⚡</div><div class="p-2 border rounded text-2xl" onclick="document.querySelector('input[name=logo_icono]').value='🔥'">🔥</div><div class="p-2 border rounded text-2xl" onclick="document.querySelector('input[name=logo_icono]').value='👊'">👊</div></div></div></div>
 {% endblock %}
