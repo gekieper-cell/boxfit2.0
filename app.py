@@ -1,10 +1,13 @@
 import os
-from flask import Flask, render_template, request, redirect, url_for, flash
+import pandas as pd
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
-from models import db, User, Alumno, Transaccion
-from datetime import datetime, timedelta
+from models import db, User, Alumno, Transaccion, Asistencia, Config, Pago
+from datetime import datetime, timedelta, date
 from sqlalchemy import func
+from functools import wraps
+from dateutil.relativedelta import relativedelta
 
 app = Flask(__name__)
 
@@ -29,6 +32,15 @@ login_manager.login_message_category = 'error'
 def load_user(user_id):
     return User.query.get(int(user_id))
 
+# Decorador para restringir acceso a administradores
+def admin_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not current_user.is_authenticated or current_user.role != 'admin':
+            flash('Acceso restringido a administradores', 'error')
+            return redirect(url_for('index'))
+        return f(*args, **kwargs)
+    return decorated_function
 
 # ====================== HELPERS ======================
 
@@ -43,7 +55,6 @@ def get_rango(periodo):
         return hoy.replace(day=1), ahora
     return datetime.min, ahora
 
-
 def sum_transacciones(tipo, desde, hasta):
     result = db.session.query(func.sum(Transaccion.monto)).filter(
         Transaccion.tipo == tipo,
@@ -52,7 +63,6 @@ def sum_transacciones(tipo, desde, hasta):
     ).scalar()
     return result or 0.0
 
-
 def count_transacciones(tipo, desde, hasta):
     return Transaccion.query.filter(
         Transaccion.tipo == tipo,
@@ -60,8 +70,7 @@ def count_transacciones(tipo, desde, hasta):
         Transaccion.fecha <= hasta
     ).count()
 
-
-# ====================== AUTENTICACIÓN ======================
+# ====================== RUTAS PRINCIPALES ======================
 
 @app.route('/')
 def index():
@@ -71,6 +80,19 @@ def index():
     ahora = datetime.utcnow()
     hoy = ahora.replace(hour=0, minute=0, second=0, microsecond=0)
     inicio_mes = hoy.replace(day=1)
+    hoy_date = date.today()
+
+    # Notificaciones de vencimientos
+    por_vencer = Alumno.query.filter(
+        Alumno.fecha_vencimiento <= hoy_date + timedelta(days=3),
+        Alumno.fecha_vencimiento > hoy_date,
+        Alumno.estado == 'activo'
+    ).count()
+    
+    vencidos = Alumno.query.filter(
+        Alumno.fecha_vencimiento <= hoy_date,
+        Alumno.estado == 'activo'
+    ).count()
 
     # Ingresos hoy = alumnos con ultima_asistencia de hoy
     ingresos_hoy = Alumno.query.filter(
@@ -108,10 +130,13 @@ def index():
         'ventas_mes': ventas_mes,
         'ultimas_asistencias': ultimas_asistencias,
         'ultimas_ventas': ultimas_ventas,
+        'por_vencer': por_vencer,
+        'vencidos': vencidos,
     }
 
     return render_template('dashboard.html', stats=stats)
 
+# ====================== AUTENTICACIÓN ======================
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -132,14 +157,11 @@ def login():
 
     return render_template('login.html')
 
-
 @app.route('/logout')
-@login_required
 def logout():
     logout_user()
     flash('Sesión cerrada correctamente', 'info')
     return redirect(url_for('login'))
-
 
 # ====================== ASISTENCIA ======================
 
@@ -150,6 +172,9 @@ def asistencia():
     alumno = Alumno.query.filter_by(dni_fin=dni_3).first()
 
     if alumno:
+        if not alumno.esta_activo():
+            return {"status": "error", "msg": f"⚠ CUOTA VENCIDA: {alumno.nombre} - Debe regularizar"}, 403
+        
         if alumno.deuda:
             return {"status": "error", "msg": f"⚠ DEUDA PENDIENTE: {alumno.nombre}"}, 403
 
@@ -158,7 +183,6 @@ def asistencia():
         return {"status": "success", "msg": f"Ingreso OK: {alumno.nombre}"}, 200
 
     return {"status": "error", "msg": "DNI no encontrado en el sistema"}, 404
-
 
 @app.route('/asistencia/historial')
 @login_required
@@ -174,7 +198,6 @@ def asistencia_page():
     ingresos_hoy = Alumno.query.filter(Alumno.ultima_asistencia >= hoy).count()
     ingresos_semana = Alumno.query.filter(Alumno.ultima_asistencia >= inicio_semana).count()
 
-    # Distribución por clase HOY
     por_clase = {}
     alumnos_hoy = Alumno.query.filter(Alumno.ultima_asistencia >= hoy).all()
     for a in alumnos_hoy:
@@ -187,7 +210,6 @@ def asistencia_page():
                            ingresos_semana=ingresos_semana,
                            por_clase=por_clase,
                            hoy=ahora)
-
 
 # ====================== VENTAS ======================
 
@@ -217,7 +239,6 @@ def ventas_page():
 
     return render_template('ventas.html', ventas=ventas, totales=totales, cant=cant)
 
-
 @app.route('/venta', methods=['POST'])
 @login_required
 def venta():
@@ -234,10 +255,8 @@ def venta():
         db.session.rollback()
         flash('Error al registrar la venta', 'error')
 
-    # Redirect según dónde venga
     next_url = request.form.get('next') or request.referrer or url_for('index')
     return redirect(next_url)
-
 
 # ====================== GASTOS ======================
 
@@ -262,7 +281,6 @@ def gastos_page():
 
     return render_template('gastos.html', gastos=gastos, totales=totales, balance=balance)
 
-
 @app.route('/gasto', methods=['POST'])
 @login_required
 def gasto():
@@ -281,7 +299,6 @@ def gasto():
 
     return redirect(url_for('gastos_page'))
 
-
 @app.route('/transaccion/eliminar/<int:id>')
 @login_required
 def eliminar_transaccion(id):
@@ -292,15 +309,13 @@ def eliminar_transaccion(id):
     flash(f'{"Venta" if tipo == "venta" else "Gasto"} eliminado/a correctamente', 'success')
     return redirect(request.referrer or url_for('ventas_page'))
 
-
 # ====================== ALUMNOS ======================
 
 @app.route('/alumnos')
 @login_required
 def alumnos():
     todos = Alumno.query.order_by(Alumno.nombre).all()
-    return render_template('alumnos.html', alumnos=todos)
-
+    return render_template('alumnos.html', alumnos=todos, date=date)
 
 @app.route('/alumnos/nuevo', methods=['GET', 'POST'])
 @login_required
@@ -311,19 +326,27 @@ def nuevo_alumno():
                 nombre=request.form['nombre'].strip(),
                 dni_fin=request.form['dni_fin'].strip(),
                 email=request.form.get('email', '').strip() or None,
+                telefono=request.form.get('telefono', '').strip() or None,
+                contacto_emergencia=request.form.get('contacto_emergencia', '').strip() or None,
+                telefono_emergencia=request.form.get('telefono_emergencia', '').strip() or None,
                 clase=request.form.get('clase') or None,
-                deuda=request.form.get('deuda') == 'on'
+                deuda=request.form.get('deuda') == 'on',
+                plan=request.form.get('plan', 'mensual'),
+                valor_cuota=float(request.form.get('valor_cuota', 15000)),
+                fecha_inscripcion=datetime.utcnow(),
+                estado='activo'
             )
+            nuevo.fecha_vencimiento = nuevo.calcular_vencimiento()
+            
             db.session.add(nuevo)
             db.session.commit()
             flash(f'Alumno "{nuevo.nombre}" agregado correctamente', 'success')
             return redirect(url_for('alumnos'))
         except Exception as e:
             db.session.rollback()
-            flash('Error al agregar el alumno. Verificá que el DNI no esté duplicado.', 'error')
+            flash(f'Error al agregar el alumno: {str(e)}', 'error')
 
     return render_template('nuevo_alumno.html')
-
 
 @app.route('/alumnos/editar/<int:id>', methods=['GET', 'POST'])
 @login_required
@@ -335,20 +358,26 @@ def editar_alumno(id):
             alumno.nombre = request.form['nombre'].strip()
             alumno.dni_fin = request.form['dni_fin'].strip()
             alumno.email = request.form.get('email', '').strip() or None
+            alumno.telefono = request.form.get('telefono', '').strip() or None
+            alumno.contacto_emergencia = request.form.get('contacto_emergencia', '').strip() or None
+            alumno.telefono_emergencia = request.form.get('telefono_emergencia', '').strip() or None
             alumno.clase = request.form.get('clase') or None
             alumno.deuda = request.form.get('deuda') == 'on'
+            alumno.plan = request.form.get('plan', 'mensual')
+            alumno.valor_cuota = float(request.form.get('valor_cuota', 15000))
+            
             db.session.commit()
             flash('Alumno actualizado correctamente', 'success')
             return redirect(url_for('alumnos'))
         except Exception as e:
             db.session.rollback()
-            flash('Error al actualizar el alumno', 'error')
+            flash(f'Error al actualizar el alumno: {str(e)}', 'error')
 
     return render_template('editar_alumno.html', alumno=alumno)
 
-
 @app.route('/alumnos/eliminar/<int:id>')
 @login_required
+@admin_required
 def eliminar_alumno(id):
     alumno = Alumno.query.get_or_404(id)
     nombre = alumno.nombre
@@ -357,6 +386,161 @@ def eliminar_alumno(id):
     flash(f'Alumno "{nombre}" eliminado correctamente', 'success')
     return redirect(url_for('alumnos'))
 
+# ====================== IMPORTACIÓN ======================
+
+@app.route('/importar_alumnos', methods=['POST'])
+@login_required
+@admin_required
+def importar_alumnos():
+    file = request.files.get('file')
+    if not file:
+        flash("No se seleccionó archivo", "error")
+        return redirect(url_for('alumnos'))
+
+    try:
+        df = pd.read_excel(file)
+        df.columns = df.columns.str.strip().str.lower()
+        
+        for _, row in df.iterrows():
+            dni_val = str(row.get('dni', '000'))
+            nuevo = Alumno(
+                nombre=str(row.get('nombre', 'Sin Nombre')),
+                dni_fin=dni_val[-3:],
+                email=str(row.get('email', '')),
+                telefono=str(row.get('telefono', '')),
+                contacto_emergencia=str(row.get('contacto_emergencia', '')),
+                telefono_emergencia=str(row.get('telefono_emergencia', '')),
+                clase=str(row.get('clase', 'Boxeo')),
+                deuda=False,
+                plan=row.get('plan', 'mensual'),
+                valor_cuota=float(row.get('valor_cuota', 15000)),
+                fecha_inscripcion=datetime.utcnow(),
+                estado='activo'
+            )
+            nuevo.fecha_vencimiento = nuevo.calcular_vencimiento()
+            db.session.add(nuevo)
+        
+        db.session.commit()
+        flash("Alumnos importados con éxito", "success")
+    except Exception as e:
+        db.session.rollback()
+        flash(f"Error en la importación: {str(e)}", "error")
+    
+    return redirect(url_for('alumnos'))
+
+# ====================== CUOTAS Y PAGOS ======================
+
+@app.route('/alumnos/<int:id>/pagar', methods=['GET', 'POST'])
+@login_required
+def registrar_pago(id):
+    alumno = Alumno.query.get_or_404(id)
+    
+    if request.method == 'POST':
+        try:
+            monto = float(request.form.get('monto', 0))
+            metodo = request.form.get('metodo_pago', 'efectivo')
+            comprobante = request.form.get('comprobante', '').strip()
+            
+            nuevo_pago = Pago(
+                alumno_id=alumno.id,
+                monto=monto,
+                periodo_desde=alumno.fecha_vencimiento if alumno.fecha_vencimiento else date.today(),
+                periodo_hasta=calcular_nuevo_vencimiento(alumno),
+                metodo_pago=metodo,
+                comprobante=comprobante or None
+            )
+            
+            alumno.fecha_vencimiento = nuevo_pago.periodo_hasta
+            alumno.estado = 'activo'
+            alumno.deuda = False
+            
+            db.session.add(nuevo_pago)
+            db.session.commit()
+            
+            transaccion = Transaccion(
+                tipo='venta',
+                item=f'Cuota {alumno.nombre}',
+                monto=monto,
+                alumno_id=alumno.id
+            )
+            db.session.add(transaccion)
+            db.session.commit()
+            
+            flash(f'Pago registrado correctamente. Nuevo vencimiento: {alumno.fecha_vencimiento.strftime("%d/%m/%Y")}', 'success')
+            return redirect(url_for('alumnos'))
+            
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error al registrar pago: {str(e)}', 'error')
+    
+    return render_template('registrar_pago.html', alumno=alumno)
+
+def calcular_nuevo_vencimiento(alumno):
+    fecha_actual = date.today()
+    fecha_base = max(fecha_actual, alumno.fecha_vencimiento or fecha_actual)
+    
+    if alumno.plan == 'mensual':
+        return fecha_base + relativedelta(months=1)
+    elif alumno.plan == 'trimestral':
+        return fecha_base + relativedelta(months=3)
+    else:
+        return fecha_base + relativedelta(years=1)
+
+@app.route('/alumnos/vencidos')
+@login_required
+def alumnos_vencidos():
+    vencidos = Alumno.query.filter(
+        Alumno.fecha_vencimiento < date.today(),
+        Alumno.estado != 'suspendido'
+    ).order_by(Alumno.fecha_vencimiento).all()
+    
+    return render_template('alumnos_vencidos.html', alumnos=vencidos, date=date)
+
+@app.route('/alumnos/<int:id>/suspender')
+@login_required
+def suspender_alumno(id):
+    alumno = Alumno.query.get_or_404(id)
+    alumno.estado = 'suspendido'
+    db.session.commit()
+    flash(f'Alumno "{alumno.nombre}" suspendido', 'warning')
+    return redirect(request.referrer or url_for('alumnos'))
+
+@app.route('/alumnos/<int:id>/activar')
+@login_required
+def activar_alumno(id):
+    alumno = Alumno.query.get_or_404(id)
+    alumno.estado = 'activo'
+    db.session.commit()
+    flash(f'Alumno "{alumno.nombre}" activado', 'success')
+    return redirect(request.referrer or url_for('alumnos'))
+
+@app.route('/pagos/historial/<int:id>')
+@login_required
+def historial_pagos(id):
+    alumno = Alumno.query.get_or_404(id)
+    pagos = Pago.query.filter_by(alumno_id=id).order_by(Pago.fecha_pago.desc()).all()
+    return render_template('historial_pagos.html', alumno=alumno, pagos=pagos)
+
+@app.route('/notificaciones/vencimientos')
+@login_required
+def notificaciones_vencimientos():
+    hoy = date.today()
+    
+    por_vencer = Alumno.query.filter(
+        Alumno.fecha_vencimiento <= hoy + timedelta(days=3),
+        Alumno.fecha_vencimiento > hoy,
+        Alumno.estado == 'activo'
+    ).all()
+    
+    vencidos = Alumno.query.filter(
+        Alumno.fecha_vencimiento <= hoy,
+        Alumno.estado == 'activo'
+    ).all()
+    
+    return jsonify({
+        'por_vencer': [{'id': a.id, 'nombre': a.nombre, 'dias': a.dias_restantes()} for a in por_vencer],
+        'vencidos': [{'id': a.id, 'nombre': a.nombre, 'vencimiento': a.fecha_vencimiento.strftime('%d/%m/%Y')} for a in vencidos]
+    })
 
 # ====================== REPORTES ======================
 
@@ -377,18 +561,15 @@ def reportes_page():
     if ventas_mes_ant > 0:
         variacion = round(((ventas_mes - ventas_mes_ant) / ventas_mes_ant) * 100, 1)
 
-    # Asistencias del mes
     asistencias_mes = Alumno.query.filter(Alumno.ultima_asistencia >= inicio_mes).count()
     dias_mes = (ahora - inicio_mes).days + 1
     promedio_diario = round(asistencias_mes / dias_mes, 1) if dias_mes > 0 else 0
 
-    # Por clase
     por_clase_raw = db.session.query(
         Alumno.clase, func.count(Alumno.id)
     ).group_by(Alumno.clase).all()
     por_clase = [{'clase': c or 'Sin clase', 'cantidad': n} for c, n in por_clase_raw]
 
-    # Top productos
     top_productos_raw = db.session.query(
         Transaccion.item,
         func.count(Transaccion.id).label('cantidad'),
@@ -400,10 +581,8 @@ def reportes_page():
 
     top_productos = [{'item': r.item, 'cantidad': r.cantidad, 'total': r.total or 0} for r in top_productos_raw]
 
-    # Deudores
     deudores = Alumno.query.filter_by(deuda=True).order_by(Alumno.nombre).all()
 
-    # Últimos 7 días para chart
     labels = []
     ventas_vals = []
     gastos_vals = []
@@ -415,7 +594,6 @@ def reportes_page():
         ventas_vals.append(round(sum_transacciones('venta', dia, siguiente), 2))
         gastos_vals.append(round(sum_transacciones('gasto', dia, siguiente), 2))
 
-    # Resumen últimos 30 días
     resumen_dias = []
     for i in range(29, -1, -1):
         dia = hoy - timedelta(days=i)
@@ -455,22 +633,21 @@ def reportes_page():
 
     return render_template('reportes.html', kpis=kpis)
 
-
 # ====================== INIT DB ======================
 
 @app.cli.command("init-db")
 def init_db():
-    """Inicializar base de datos y crear usuario admin"""
     db.create_all()
     if not User.query.filter_by(username='admin').first():
         hashed_pw = generate_password_hash('admin123')
         admin = User(username='admin', password=hashed_pw, role='admin')
         db.session.add(admin)
+        config = Config(clave='valor_cuota_default', valor='15000')
+        db.session.add(config)
         db.session.commit()
         print(">>> Base de datos inicializada. Usuario 'admin' creado con clave 'admin123'.")
     else:
         print(">>> La base de datos ya está inicializada.")
-
 
 # ====================== ARRANQUE ======================
 
@@ -480,6 +657,8 @@ if __name__ == '__main__':
         if not User.query.filter_by(username='admin').first():
             admin = User(username='admin', password=generate_password_hash('admin123'), role='admin')
             db.session.add(admin)
+            config = Config(clave='valor_cuota_default', valor='15000')
+            db.session.add(config)
             db.session.commit()
 
     port = int(os.environ.get("PORT", 5000))

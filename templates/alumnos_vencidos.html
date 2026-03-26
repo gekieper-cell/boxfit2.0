@@ -50,18 +50,22 @@
                     </td>
                     <td>
                         {% if a.fecha_vencimiento %}
-                        <span class="badge badge-danger">{{ (now|default(today) - a.fecha_vencimiento).days if now else 0 }} días</span>
+                            {% set dias_vencido = (date.today() - a.fecha_vencimiento).days %}
+                            <span class="badge badge-danger">{{ dias_vencido }} días</span>
                         {% else %}
-                        —
+                            —
                         {% endif %}
                     </td>
                     <td>
-                        <div style="display: flex; gap: 6px;">
-                            <a href="{{ url_for('registrar_pago', id=a.id) }}" class="btn btn-success btn-sm" title="Registrar Pago">
+                        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                            <a href="{{ url_for('registrar_pago', id=a.id) }}" class="btn btn-success btn-sm" style="white-space: nowrap;">
                                 <i class="fas fa-money-bill"></i> Pagar
                             </a>
-                            <a href="{{ url_for('editar_alumno', id=a.id) }}" class="btn btn-outline btn-sm" title="Editar">
+                            <a href="{{ url_for('editar_alumno', id=a.id) }}" class="btn btn-outline btn-sm">
                                 <i class="fas fa-edit"></i>
+                            </a>
+                            <a href="{{ url_for('historial_pagos', id=a.id) }}" class="btn btn-outline btn-sm">
+                                <i class="fas fa-history"></i>
                             </a>
                         </div>
                     </td>
@@ -75,14 +79,10 @@
         <i class="fas fa-check-circle" style="font-size: 48px; color: var(--accent-green);"></i>
         <h3 style="margin-top: 16px;">No hay alumnos con cuota vencida</h3>
         <p style="color: var(--text-muted);">Todos los alumnos están al día con sus pagos</p>
+        <a href="{{ url_for('alumnos') }}" class="btn btn-primary" style="margin-top: 20px;">
+            <i class="fas fa-users"></i> Ver todos los alumnos
+        </a>
     </div>
     {% endif %}
 </div>
-{% endblock %}
-
-{% block extra_scripts %}
-<script>
-// Pasar la fecha actual al template
-const today = new Date();
-</script>
 {% endblock %}
