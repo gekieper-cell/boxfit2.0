@@ -89,6 +89,47 @@ class CajaDiaria(db.Model):
     usuario_apertura = db.relationship('User', foreign_keys=[usuario_apertura_id])
     usuario_cierre = db.relationship('User', foreign_keys=[usuario_cierre_id])
 
+# ==================== CONFIGURACIÓN PRODUCTOS DESTACADOS ====================
+
+class Configuracion(db.Model):
+    __tablename__ = 'configuracion'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    clave = db.Column(db.String(100), unique=True, nullable=False)
+    valor = db.Column(db.Text, nullable=True)
+    tipo = db.Column(db.String(20), default='text')
+    descripcion = db.Column(db.String(200))
+    
+    @staticmethod
+    def get(clave, default=None):
+        import json
+        config = Configuracion.query.filter_by(clave=clave).first()
+        if config:
+            if config.tipo == 'json':
+                return json.loads(config.valor) if config.valor else default
+            return config.valor
+        return default
+    
+    @staticmethod
+    def set(clave, valor, tipo='text', descripcion=''):
+        import json
+        config = Configuracion.query.filter_by(clave=clave).first()
+        if config:
+            config.valor = str(valor) if tipo != 'json' else json.dumps(valor)
+            config.tipo = tipo
+            config.descripcion = descripcion or config.descripcion
+        else:
+            config = Configuracion(
+                clave=clave,
+                valor=str(valor) if tipo != 'json' else json.dumps(valor),
+                tipo=tipo,
+                descripcion=descripcion
+            )
+            db.session.add(config)
+        db.session.commit()
+
+# ==================== CONFIGURACIÓN DEL SITIO ====================
+
 class ConfiguracionSitio(db.Model):
     __tablename__ = 'configuracion_sitio'
     
