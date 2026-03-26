@@ -1,6 +1,6 @@
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import UserMixin
-from datetime import datetime
+from datetime import datetime, date
 from sqlalchemy import func
 
 db = SQLAlchemy()
@@ -24,7 +24,6 @@ class Alumno(db.Model):
     fecha_inscripcion = db.Column(db.DateTime, default=datetime.utcnow)
     activo = db.Column(db.Boolean, default=True)
     
-    # Relaciones
     ventas = db.relationship('Venta', backref='alumno', lazy=True)
     asistencias = db.relationship('AsistenciaClase', backref='alumno', lazy=True)
 
@@ -37,7 +36,6 @@ class Clase(db.Model):
     profesor = db.Column(db.String(100))
     capacidad = db.Column(db.Integer, default=20)
     
-    # Relaciones
     asistentes = db.relationship('AsistenciaClase', backref='clase', lazy=True)
 
 class AsistenciaClase(db.Model):
@@ -52,10 +50,10 @@ class Producto(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     nombre = db.Column(db.String(100), nullable=False)
     categoria = db.Column(db.String(50))
-    subcategoria = db.Column(db.String(50))  # Remeras, Sudaderas, Buzos, Pantalones
+    subcategoria = db.Column(db.String(50))
     precio = db.Column(db.Float, nullable=False)
     stock = db.Column(db.Integer, default=0)
-    talles = db.Column(db.String(100))  # S, M, L, XL, etc.
+    talles = db.Column(db.String(100))
     colores = db.Column(db.String(200))
     imagen_url = db.Column(db.String(500))
 
@@ -73,3 +71,20 @@ class Venta(db.Model):
     
     producto = db.relationship('Producto')
     usuario = db.relationship('User')
+
+class CajaDiaria(db.Model):
+    __tablename__ = 'caja_diaria'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    fecha = db.Column(db.Date, default=date.today, unique=True)
+    apertura = db.Column(db.DateTime, default=datetime.utcnow)
+    cierre = db.Column(db.DateTime)
+    monto_inicial = db.Column(db.Float, default=0)
+    monto_final = db.Column(db.Float)
+    ventas_totales = db.Column(db.Float, default=0)
+    estado = db.Column(db.String(20), default='abierta')
+    usuario_apertura_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    usuario_cierre_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    
+    usuario_apertura = db.relationship('User', foreign_keys=[usuario_apertura_id])
+    usuario_cierre = db.relationship('User', foreign_keys=[usuario_cierre_id])
