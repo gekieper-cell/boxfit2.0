@@ -2,13 +2,143 @@
 {% block title %}Reportes{% endblock %}
 
 {% block content %}
-<div class="mb-5"><h2 class="text-xl font-semibold dark:text-white">Reportes</h2><p class="text-gray-500 text-sm">Análisis de ventas y estadísticas</p>{% if current_user.role == 'admin' %}<a href="{{ url_for('exportar_reportes') }}" class="btn btn-success mt-2"><i class="fas fa-file-excel"></i> Exportar a Excel</a>{% endif %}</div>
+<div class="mb-5">
+    <div class="flex justify-between items-center">
+        <div>
+            <h2 class="text-xl font-semibold dark:text-white">Reportes</h2>
+            <p class="text-gray-500 text-sm">Análisis de ventas, gastos y estadísticas</p>
+        </div>
+        {% if current_user.role == 'admin' %}
+        <a href="{{ url_for('exportar_reportes') }}" class="btn btn-success">
+            <i class="fas fa-file-excel"></i> Exportar a Excel
+        </a>
+        {% endif %}
+    </div>
+</div>
 
-<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6"><div class="stat-card"><div><p class="text-gray-500 text-xs">Total Ventas Mes</p><p class="text-2xl font-bold">${{ "%.0f"|format(ventas_meses[-1].total if ventas_meses else 0) }}</p></div><i class="fas fa-chart-line text-2xl text-blue-400"></i></div><div class="stat-card"><div><p class="text-gray-500 text-xs">Producto Más Vendido</p><p class="text-lg font-bold truncate">{{ top_productos[0].producto_nombre if top_productos else '-' }}</p></div><i class="fas fa-trophy text-2xl text-yellow-500"></i></div><div class="stat-card"><div><p class="text-gray-500 text-xs">Clase con más alumnos</p><p class="text-lg font-bold">{{ (alumnos_clase|sort(attribute='total', reverse=True)|first).clase if alumnos_clase else '-' }}</p></div><i class="fas fa-users text-2xl text-green-400"></i></div><div class="stat-card"><div><p class="text-gray-500 text-xs">Mejor Cliente</p><p class="text-lg font-bold truncate">{{ top_clientes[0].nombre if top_clientes else '-' }}</p></div><i class="fas fa-crown text-2xl text-purple-500"></i></div></div>
+<!-- Tarjetas de resumen -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+    <div class="stat-card">
+        <div><p class="text-gray-500 text-xs">Ventas del Mes</p><p class="text-2xl font-bold text-green-600">${{ "%.0f"|format(ventas_meses[-1].total if ventas_meses else 0) }}</p></div>
+        <i class="fas fa-chart-line text-2xl text-blue-400"></i>
+    </div>
+    <div class="stat-card">
+        <div><p class="text-gray-500 text-xs">Gastos del Mes</p><p class="text-2xl font-bold text-red-600">${{ "%.0f"|format(gastos_por_categoria|sum(attribute='total')) }}</p></div>
+        <i class="fas fa-chart-line text-2xl text-red-400"></i>
+    </div>
+    <div class="stat-card">
+        <div><p class="text-gray-500 text-xs">Balance del Mes</p><p class="text-2xl font-bold {% if ventas_meses[-1].total - gastos_por_categoria|sum(attribute='total') > 0 %}text-green-600{% else %}text-red-600{% endif %}">
+            ${{ "%.0f"|format(ventas_meses[-1].total - gastos_por_categoria|sum(attribute='total') if ventas_meses else 0) }}
+        </p></div>
+        <i class="fas fa-chart-line text-2xl text-purple-400"></i>
+    </div>
+    <div class="stat-card">
+        <div><p class="text-gray-500 text-xs">Mejor Cliente</p><p class="text-lg font-bold truncate">{{ top_clientes[0].nombre if top_clientes else '-' }}</p></div>
+        <i class="fas fa-crown text-2xl text-yellow-500"></i>
+    </div>
+</div>
 
-<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6"><div class="card"><div class="card-header"><h3 class="font-semibold">Ventas por Día (Últimos 30 días)</h3></div><div class="card-body"><div class="space-y-2">{% for v in ventas_dias[-7:] %}<div class="flex items-center gap-3"><span class="text-xs w-12">{{ v.fecha }}</span><div class="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-6 overflow-hidden"><div class="bg-green-500 h-full rounded-full" style="width: {% if ventas_dias|map(attribute='total')|max > 0 %}{{ (v.total / ventas_dias|map(attribute='total')|max * 100)|int }}{% else %}0{% endif %}%"></div></div><span class="text-sm w-16">${{ "%.0f"|format(v.total) }}</span></div>{% endfor %}</div></div></div><div class="card"><div class="card-header"><h3 class="font-semibold">Ventas por Categoría</h3></div><div class="card-body"><div class="space-y-2">{% for c in ventas_categoria %}<div class="flex items-center gap-3"><span class="text-sm w-28">{{ c.categoria or 'Sin categoría' }}</span><div class="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-6 overflow-hidden"><div class="bg-blue-500 h-full rounded-full" style="width: {% if ventas_categoria|map(attribute='total')|max > 0 %}{{ (c.total / ventas_categoria|map(attribute='total')|max * 100)|int }}{% else %}0{% endif %}%"></div></div><span class="text-sm w-20">${{ "%.0f"|format(c.total) }}</span></div>{% endfor %}</div></div></div></div>
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+    <!-- Ventas por Día -->
+    <div class="card">
+        <div class="card-header"><h3 class="font-semibold">Ventas por Día (Últimos 30 días)</h3></div>
+        <div class="card-body">
+            <div class="space-y-2">
+                {% for v in ventas_dias[-7:] %}
+                <div class="flex items-center gap-3">
+                    <span class="text-xs w-12">{{ v.fecha }}</span>
+                    <div class="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-6 overflow-hidden">
+                        <div class="bg-green-500 h-full rounded-full" style="width: {% if ventas_dias|map(attribute='total')|max > 0 %}{{ (v.total / ventas_dias|map(attribute='total')|max * 100)|int }}{% else %}0{% endif %}%"></div>
+                    </div>
+                    <span class="text-sm w-16">${{ "%.0f"|format(v.total) }}</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Gastos por Categoría -->
+    <div class="card">
+        <div class="card-header"><h3 class="font-semibold">Gastos por Categoría</h3></div>
+        <div class="card-body">
+            <div class="space-y-2">
+                {% for g in gastos_por_categoria %}
+                <div class="flex items-center gap-3">
+                    <span class="text-sm w-28">{{ g.categoria }}</span>
+                    <div class="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-6 overflow-hidden">
+                        <div class="bg-red-500 h-full rounded-full" style="width: {% if gastos_por_categoria|map(attribute='total')|max > 0 %}{{ (g.total / gastos_por_categoria|map(attribute='total')|max * 100)|int }}{% else %}0{% endif %}%"></div>
+                    </div>
+                    <span class="text-sm w-20 text-red-600">${{ "%.0f"|format(g.total) }}</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
 
-<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6"><div class="card"><div class="card-header"><h3 class="font-semibold">Top 10 Productos Más Vendidos</h3></div><div class="card-body"><div class="table-container"><table class="w-full"><thead><tr><th>Producto</th><th>Cantidad</th><th>Total</th></tr></thead><tbody>{% for p in top_productos %}<tr><td>{{ p.producto_nombre }}</td><td>{{ p.total_cantidad }} unidades</td><td class="text-green-600">${{ "%.0f"|format(p.total_monto) }}</td> </tr>{% endfor %}</tbody></table></div></div></div><div class="card"><div class="card-header"><h3 class="font-semibold">Top 10 Mejores Clientes</h3></div><div class="card-body"><div class="table-container"><table class="w-full"><thead><tr><th>Alumno</th><th>Compras</th><th>Total Gastado</th></tr></thead><tbody>{% for c in top_clientes %}<tr><td>{{ c.nombre }}</td><td>{{ c.total_compras }} compras</td><td class="text-green-600">${{ "%.0f"|format(c.total_gastado) }}</td></tr>{% endfor %}</tbody></table></div></div></div></div>
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+    <!-- Top Productos -->
+    <div class="card">
+        <div class="card-header"><h3 class="font-semibold">Top 10 Productos Más Vendidos</h3></div>
+        <div class="card-body">
+            <div class="table-container">
+                <table class="w-full">
+                    <thead><tr><th>Producto</th><th>Cantidad</th><th>Total</th></tr></thead>
+                    <tbody>{% for p in top_productos %}<tr><td>{{ p.producto_nombre }}</td><td>{{ p.total_cantidad }} unid.</td><td class="text-green-600">${{ "%.0f"|format(p.total_monto) }}</td></tr>{% endfor %}</tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Mejores Clientes -->
+    <div class="card">
+        <div class="card-header"><h3 class="font-semibold">Top 10 Mejores Clientes</h3></div>
+        <div class="card-body">
+            <div class="table-container">
+                <table class="w-full">
+                    <thead><tr><th>Alumno</th><th>Compras</th><th>Total Gastado</th></tr></thead>
+                    <tbody>{% for c in top_clientes %}<tr><td>{{ c.nombre }}</td><td>{{ c.total_compras }} compras</td><td class="text-green-600">${{ "%.0f"|format(c.total_gastado) }}</td></tr>{% endfor %}</tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
 
-<div class="grid grid-cols-1 lg:grid-cols-2 gap-6"><div class="card"><div class="card-header"><h3 class="font-semibold">Alumnos por Clase</h3></div><div class="card-body"><div class="space-y-2">{% for c in alumnos_clase %}<div class="flex items-center gap-3"><span class="text-sm w-32">{{ c.clase or 'Sin clase' }}</span><div class="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-6 overflow-hidden"><div class="bg-purple-500 h-full rounded-full flex items-center justify-end px-2 text-xs text-white" style="width: {% if alumnos_clase|map(attribute='total')|max > 0 %}{{ (c.total / alumnos_clase|map(attribute='total')|max * 100)|int }}{% else %}0{% endif %}%">{{ c.total }}</div></div><span class="text-sm w-12">{{ c.total }}</span></div>{% endfor %}</div></div></div><div class="card"><div class="card-header"><h3 class="font-semibold">Ventas Mensuales</h3></div><div class="card-body"><div class="space-y-2">{% for m in ventas_meses %}<div class="flex items-center gap-3"><span class="text-sm w-20">{{ m.mes }}</span><div class="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-6 overflow-hidden"><div class="bg-yellow-500 h-full rounded-full" style="width: {% if ventas_meses|map(attribute='total')|max > 0 %}{{ (m.total / ventas_meses|map(attribute='total')|max * 100)|int }}{% else %}0{% endif %}%"></div></div><span class="text-sm w-20">${{ "%.0f"|format(m.total) }}</span></div>{% endfor %}</div></div></div></div>
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <!-- Alumnos por Clase -->
+    <div class="card">
+        <div class="card-header"><h3 class="font-semibold">Alumnos por Clase</h3></div>
+        <div class="card-body">
+            <div class="space-y-2">
+                {% for c in alumnos_clase %}
+                <div class="flex items-center gap-3">
+                    <span class="text-sm w-32">{{ c.clase or 'Sin clase' }}</span>
+                    <div class="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-6 overflow-hidden">
+                        <div class="bg-purple-500 h-full rounded-full flex items-center justify-end px-2 text-xs text-white" style="width: {% if alumnos_clase|map(attribute='total')|max > 0 %}{{ (c.total / alumnos_clase|map(attribute='total')|max * 100)|int }}{% else %}0{% endif %}%">{{ c.total }}</div>
+                    </div>
+                    <span class="text-sm w-12">{{ c.total }}</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Ventas Mensuales -->
+    <div class="card">
+        <div class="card-header"><h3 class="font-semibold">Ventas Mensuales</h3></div>
+        <div class="card-body">
+            <div class="space-y-2">
+                {% for m in ventas_meses %}
+                <div class="flex items-center gap-3">
+                    <span class="text-sm w-20">{{ m.mes }}</span>
+                    <div class="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-6 overflow-hidden">
+                        <div class="bg-yellow-500 h-full rounded-full" style="width: {% if ventas_meses|map(attribute='total')|max > 0 %}{{ (m.total / ventas_meses|map(attribute='total')|max * 100)|int }}{% else %}0{% endif %}%"></div>
+                    </div>
+                    <span class="text-sm w-20">${{ "%.0f"|format(m.total) }}</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}

@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+{% block title %}Configurar Dashboard{% endblock %}
+
+{% block content %}
+<div class="mb-5">
+    <h2 class="text-xl font-semibold dark:text-white">Configurar Dashboard</h2>
+    <p class="text-gray-500 text-sm">Personaliza qué widgets ver en tu pantalla principal</p>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h3 class="font-semibold">Widgets del Dashboard</h3>
+        <span class="text-sm text-gray-500">Arrastra para ordenar</span>
+    </div>
+    <div class="card-body">
+        <form method="POST" id="dashboardForm">
+            <div class="space-y-3" id="widgets-container">
+                {% for widget in widgets %}
+                <div class="flex items-center justify-between p-3 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800 cursor-move widget-item" data-id="{{ widget.id }}">
+                    <div class="flex items-center gap-3">
+                        <i class="fas fa-grip-vertical text-gray-400 cursor-grab"></i>
+                        <i class="{{ widget.icono }} text-blue-500 w-6"></i>
+                        <span class="font-medium">{{ widget.titulo }}</span>
+                    </div>
+                    <div class="flex items-center gap-4">
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" name="widget_{{ widget.id }}_visible" 
+                                   {% if preferencias[widget.id] and preferencias[widget.id].visible or (not preferencias[widget.id] and widget.visible_por_defecto) %}checked{% endif %}
+                                   class="w-4 h-4">
+                            <span class="text-sm">Visible</span>
+                        </label>
+                        <input type="number" name="widget_{{ widget.id }}_orden" 
+                               value="{{ preferencias[widget.id].orden if preferencias[widget.id] else widget.orden_por_defecto }}" 
+                               class="w-16 text-center border rounded px-2 py-1 text-sm">
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            
+            <div class="mt-6 flex gap-3">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save"></i> Guardar Configuración
+                </button>
+                <a href="{{ url_for('index') }}" class="btn btn-outline">
+                    Volver al Dashboard
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card mt-6">
+    <div class="card-header">
+        <h3 class="font-semibold">Vista Previa del Dashboard</h3>
+    </div>
+    <div class="card-body">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-gray-100 dark:bg-gray-800 rounded-lg">
+            <div class="flex items-center gap-2 p-2 bg-white dark:bg-gray-700 rounded shadow">
+                <i class="fas fa-chart-line text-blue-500"></i>
+                <span class="text-sm">Estadísticas Principales</span>
+            </div>
+            <div class="flex items-center gap-2 p-2 bg-white dark:bg-gray-700 rounded shadow">
+                <i class="fas fa-chart-bar text-green-500"></i>
+                <span class="text-sm">Ventas Últimos 7 Días</span>
+            </div>
+            <div class="flex items-center gap-2 p-2 bg-white dark:bg-gray-700 rounded shadow">
+                <i class="fas fa-trophy text-yellow-500"></i>
+                <span class="text-sm">Top 5 Productos</span>
+            </div>
+            <div class="flex items-center gap-2 p-2 bg-white dark:bg-gray-700 rounded shadow">
+                <i class="fas fa-cart-plus text-green-500"></i>
+                <span class="text-sm">Venta Rápida</span>
+            </div>
+        </div>
+        <p class="text-xs text-gray-500 mt-3 text-center">Los cambios se aplicarán al recargar el dashboard</p>
+    </div>
+</div>
+
+<script>
+    // Funcionalidad de arrastrar y soltar (simple)
+    const container = document.getElementById('widgets-container');
+    let dragSrcElement = null;
+    
+    container.querySelectorAll('.widget-item').forEach(item => {
+        item.addEventListener('dragstart', (e) => {
+            dragSrcElement = item;
+            e.dataTransfer.effectAllowed = 'move';
+        });
+        
+        item.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+        });
+        
+        item.addEventListener('drop', (e) => {
+            e.preventDefault();
+            if (dragSrcElement !== item) {
+                const parent = item.parentNode;
+                const allItems = Array.from(parent.children);
+                const srcIndex = allItems.indexOf(dragSrcElement);
+                const destIndex = allItems.indexOf(item);
+                
+                if (srcIndex < destIndex) {
+                    parent.insertBefore(dragSrcElement, item.nextSibling);
+                } else {
+                    parent.insertBefore(dragSrcElement, item);
+                }
+                
+                // Actualizar órdenes
+                allItems.forEach((el, idx) => {
+                    const orderInput = el.querySelector('input[type="number"]');
+                    if (orderInput) {
+                        orderInput.value = idx + 1;
+                    }
+                });
+            }
+            dragSrcElement = null;
+        });
+        
+        item.setAttribute('draggable', 'true');
+    });
+</script>
+{% endblock %}
