@@ -154,3 +154,72 @@ class ConfiguracionSitio(db.Model):
             config = ConfiguracionSitio(clave=clave, valor=valor)
             db.session.add(config)
         db.session.commit()
+
+# ==================== GASTOS ====================
+
+class Gasto(db.Model):
+    __tablename__ = 'gastos'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    categoria = db.Column(db.String(50), nullable=False)
+    descripcion = db.Column(db.String(200), nullable=False)
+    monto = db.Column(db.Float, nullable=False)
+    fecha = db.Column(db.Date, default=date.today)
+    comprobante = db.Column(db.String(100))
+    proveedor = db.Column(db.String(100))
+    usuario_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    
+    usuario = db.relationship('User')
+
+# ==================== ALQUILER ====================
+
+class Alquiler(db.Model):
+    __tablename__ = 'alquileres'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    propietario = db.Column(db.String(100), nullable=False)
+    direccion = db.Column(db.String(200))
+    monto_mensual = db.Column(db.Float, nullable=False)
+    fecha_inicio = db.Column(db.Date, nullable=False)
+    fecha_vencimiento = db.Column(db.Date, nullable=False)
+    dia_vencimiento = db.Column(db.Integer, default=5)
+    activo = db.Column(db.Boolean, default=True)
+    observaciones = db.Column(db.Text)
+
+class PagoAlquiler(db.Model):
+    __tablename__ = 'pagos_alquiler'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    alquiler_id = db.Column(db.Integer, db.ForeignKey('alquileres.id'), nullable=False)
+    mes = db.Column(db.Integer, nullable=False)
+    anio = db.Column(db.Integer, nullable=False)
+    monto = db.Column(db.Float, nullable=False)
+    fecha_pago = db.Column(db.Date, default=date.today)
+    comprobante = db.Column(db.String(100))
+    estado = db.Column(db.String(20), default='pagado')
+    
+    alquiler = db.relationship('Alquiler', backref='pagos')
+
+# ==================== DASHBOARD PERSONALIZABLE ====================
+
+class DashboardWidget(db.Model):
+    __tablename__ = 'dashboard_widgets'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    nombre = db.Column(db.String(50), unique=True, nullable=False)
+    titulo = db.Column(db.String(100), nullable=False)
+    icono = db.Column(db.String(50), default='fas fa-chart-line')
+    visible_por_defecto = db.Column(db.Boolean, default=True)
+    orden_por_defecto = db.Column(db.Integer, default=0)
+
+class PreferenciaDashboard(db.Model):
+    __tablename__ = 'preferencias_dashboard'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    usuario_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    widget_id = db.Column(db.Integer, db.ForeignKey('dashboard_widgets.id'), nullable=False)
+    visible = db.Column(db.Boolean, default=True)
+    orden = db.Column(db.Integer, default=0)
+    
+    usuario = db.relationship('User')
+    widget = db.relationship('DashboardWidget')
