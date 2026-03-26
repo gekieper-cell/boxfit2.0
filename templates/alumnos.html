@@ -1,0 +1,171 @@
+{% extends "base.html" %}
+{% block title %}Alumnos — Box Gym{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h2>Administración de Alumnos</h2>
+    <p>Gestioná el listado completo de alumnos del gimnasio.</p>
+</div>
+
+<!-- STATS RÁPIDAS -->
+<div class="grid-3" style="margin-bottom: 24px;">
+    <div class="stat-card">
+        <div class="stat-label">Total Alumnos</div>
+        <div class="stat-value" style="color: var(--accent-blue);">{{ alumnos|length }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Al día</div>
+        <div class="stat-value" style="color: var(--accent-green);">{{ alumnos|selectattr('deuda', 'equalto', false)|list|length }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Con deuda</div>
+        <div class="stat-value" style="color: var(--accent-red);">{{ alumnos|selectattr('deuda', 'equalto', true)|list|length }}</div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <div class="card-title">
+            <i class="fas fa-users" style="color: var(--accent-blue)"></i>
+            Listado de Alumnos
+        </div>
+        <div style="display: flex; gap: 10px; align-items: center;">
+            <div class="search-box">
+                <i class="fas fa-search"></i>
+                <input type="text" class="form-control" id="searchInput" placeholder="Buscar alumno...">
+            </div>
+            <select class="form-control" id="filterClase" style="width: auto;">
+                <option value="">Todas las clases</option>
+                <option>Boxeo</option>
+                <option>Funcional</option>
+                <option>Personalizado</option>
+            </select>
+            <select class="form-control" id="filterDeuda" style="width: auto;">
+                <option value="">Todos</option>
+                <option value="deuda">Con deuda</option>
+                <option value="ok">Al día</option>
+            </select>
+            <a href="{{ url_for('nuevo_alumno') }}" class="btn btn-primary">
+                <i class="fas fa-plus"></i> Nuevo Alumno
+            </a>
+        </div>
+    </div>
+
+    {% if alumnos %}
+    <div class="table-wrapper">
+        <table id="alumnosTable">
+            <thead>
+                <tr>
+                    <th>Nombre</th>
+                    <th>DNI (3 dígitos)</th>
+                    <th>Email</th>
+                    <th>Clase</th>
+                    <th>Estado</th>
+                    <th>Última Asistencia</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for a in alumnos %}
+                <tr class="alumno-row"
+                    data-nombre="{{ a.nombre|lower }}"
+                    data-clase="{{ a.clase|lower if a.clase else '' }}"
+                    data-deuda="{{ 'deuda' if a.deuda else 'ok' }}">
+                    <td>
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <div style="width: 36px; height: 36px; background: var(--bg-card2); border: 1px solid var(--border); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; color: var(--accent-blue);">
+                                {{ a.nombre[0]|upper }}
+                            </div>
+                            <span style="font-weight: 600;">{{ a.nombre }}</span>
+                        </div>
+                    </td>
+                    <td>
+                        <span style="font-family: monospace; font-size: 16px; font-weight: 700; letter-spacing: 2px; color: var(--text-muted);">{{ a.dni_fin }}</span>
+                    </td>
+                    <td style="color: var(--text-muted);">{{ a.email or '—' }}</td>
+                    <td>
+                        {% if a.clase %}
+                        <span class="badge badge-blue">{{ a.clase }}</span>
+                        {% else %}
+                        <span style="color: var(--text-muted); font-size: 13px;">—</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if a.deuda %}
+                        <span class="badge badge-danger"><i class="fas fa-exclamation-circle"></i> Deuda</span>
+                        {% else %}
+                        <span class="badge badge-success"><i class="fas fa-check-circle"></i> Al día</span>
+                        {% endif %}
+                    </td>
+                    <td style="color: var(--text-muted); font-size: 13px;">
+                        {% if a.ultima_asistencia %}
+                            {{ a.ultima_asistencia.strftime('%d/%m/%Y %H:%M') }}
+                        {% else %}
+                            <span style="opacity: 0.5">Sin registros</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div style="display: flex; gap: 6px;">
+                            <a href="{{ url_for('editar_alumno', id=a.id) }}" class="btn btn-outline btn-sm">
+                                <i class="fas fa-edit"></i> Editar
+                            </a>
+                            <button class="btn btn-danger-outline btn-sm"
+                                onclick="confirmAction(
+                                    '{{ url_for('eliminar_alumno', id=a.id) }}',
+                                    'Eliminar alumno',
+                                    '¿Eliminar a {{ a.nombre }}? Esta acción no se puede deshacer.'
+                                )">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <i class="fas fa-users"></i>
+        <h3>Sin alumnos registrados</h3>
+        <p>Agregá el primer alumno para comenzar</p>
+        <a href="{{ url_for('nuevo_alumno') }}" class="btn btn-primary" style="margin-top: 20px;">
+            <i class="fas fa-plus"></i> Agregar Alumno
+        </a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function filterTable() {
+    const search = document.getElementById('searchInput').value.toLowerCase();
+    const clase = document.getElementById('filterClase').value.toLowerCase();
+    const deuda = document.getElementById('filterDeuda').value;
+
+    document.querySelectorAll('.alumno-row').forEach(row => {
+        const nombre = row.dataset.nombre;
+        const rowClase = row.dataset.clase;
+        const rowDeuda = row.dataset.deuda;
+
+        const matchSearch = !search || nombre.includes(search);
+        const matchClase = !clase || rowClase.includes(clase);
+        const matchDeuda = !deuda || rowDeuda === deuda;
+
+        row.style.display = (matchSearch && matchClase && matchDeuda) ? '' : 'none';
+    });
+}
+
+document.getElementById('searchInput').addEventListener('input', filterTable);
+document.getElementById('filterClase').addEventListener('change', filterTable);
+document.getElementById('filterDeuda').addEventListener('change', filterTable);
+
+// Auto-select from URL param
+const params = new URLSearchParams(window.location.search);
+if (params.get('filtro') === 'deuda') {
+    document.getElementById('filterDeuda').value = 'deuda';
+    filterTable();
+}
+</script>
+{% endblock %}

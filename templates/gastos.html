@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+{% block title %}Gastos — Box Gym{% endblock %}
+
+{% block content %}
+<a href="{{ url_for('index') }}" class="back-link">
+    <i class="fas fa-arrow-left"></i> Volver al Dashboard
+</a>
+
+<div class="page-header">
+    <h2>Registro de Gastos</h2>
+    <p>Controlá los egresos del gimnasio.</p>
+</div>
+
+<div class="grid-4" style="margin-bottom: 24px;">
+    <div class="stat-card">
+        <div class="stat-label">Gastos Hoy</div>
+        <div class="stat-value" style="color: var(--accent-red);">${{ "%.0f"|format(totales.hoy) }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Esta Semana</div>
+        <div class="stat-value" style="color: var(--accent-yellow);">${{ "%.0f"|format(totales.semana) }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Este Mes</div>
+        <div class="stat-value" style="color: var(--accent-blue);">${{ "%.0f"|format(totales.mes) }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Balance del Mes</div>
+        <div class="stat-value" style="color: {{ 'var(--accent-green)' if balance >= 0 else 'var(--accent-red)' }};">
+            ${{ "%.0f"|format(balance) }}
+        </div>
+        <div class="stat-sub">Ventas − Gastos</div>
+    </div>
+</div>
+
+<div class="grid-2">
+    <!-- FORM NUEVO GASTO -->
+    <div class="card" style="align-self: start;">
+        <div class="card-title" style="margin-bottom: 20px;">
+            <i class="fas fa-minus-circle" style="color: var(--accent-red)"></i>
+            Registrar Gasto
+        </div>
+
+        <form method="POST" action="{{ url_for('gasto') }}">
+            <div class="form-group">
+                <label class="form-label">Descripción *</label>
+                <input type="text" name="producto" class="form-control"
+                       placeholder="Ej: Alquiler, Servicios, Insumos..." required
+                       list="gastosDatalist">
+                <datalist id="gastosDatalist">
+                    <option value="Alquiler mensual">
+                    <option value="Electricidad">
+                    <option value="Agua">
+                    <option value="Internet">
+                    <option value="Limpieza">
+                    <option value="Insumos de limpieza">
+                    <option value="Equipamiento">
+                    <option value="Mantenimiento">
+                    <option value="Publicidad">
+                    <option value="Seguro">
+                    <option value="Contador">
+                </datalist>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Categoría</label>
+                <select name="categoria_gasto" class="form-control">
+                    <option value="">— Sin categoría —</option>
+                    <option>Alquiler</option>
+                    <option>Servicios</option>
+                    <option>Mantenimiento</option>
+                    <option>Insumos</option>
+                    <option>Personal</option>
+                    <option>Publicidad</option>
+                    <option>Impuestos</option>
+                    <option>Otro</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Monto ($) *</label>
+                <input type="number" name="precio" class="form-control"
+                       placeholder="0.00" step="0.01" min="0" required
+                       style="font-size: 24px; font-weight: 700; text-align: right; color: var(--accent-red);">
+            </div>
+
+            <button type="submit" class="btn btn-primary" style="width: 100%; padding: 13px; font-size: 15px;">
+                <i class="fas fa-save"></i> Registrar Gasto
+            </button>
+        </form>
+    </div>
+
+    <!-- HISTORIAL GASTOS -->
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title">
+                <i class="fas fa-receipt" style="color: var(--text-muted)"></i>
+                Últimos Gastos
+            </div>
+        </div>
+
+        {% if gastos %}
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Descripción</th>
+                        <th>Fecha</th>
+                        <th style="text-align:right;">Monto</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for g in gastos %}
+                    <tr>
+                        <td style="font-weight: 600;">{{ g.item }}</td>
+                        <td style="color: var(--text-muted); font-size: 13px;">
+                            {{ g.fecha.strftime('%d/%m/%Y') }}<br>
+                            <span style="font-size: 11px;">{{ g.fecha.strftime('%H:%M') }}</span>
+                        </td>
+                        <td style="text-align:right; font-weight: 700; color: var(--accent-red); font-size: 15px;">
+                            ${{ "%.0f"|format(g.monto) }}
+                        </td>
+                        <td>
+                            <button class="btn btn-danger-outline btn-sm"
+                                onclick="confirmAction(
+                                    '{{ url_for('eliminar_transaccion', id=g.id) }}',
+                                    'Eliminar gasto',
+                                    '¿Eliminar este gasto?'
+                                )">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <i class="fas fa-receipt"></i>
+            <h3>Sin gastos registrados</h3>
+            <p>Los egresos aparecerán aquí</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

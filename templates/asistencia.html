@@ -1,0 +1,192 @@
+{% extends "base.html" %}
+{% block title %}Asistencia — Box Gym{% endblock %}
+
+{% block content %}
+<a href="{{ url_for('index') }}" class="back-link">
+    <i class="fas fa-arrow-left"></i> Volver al Dashboard
+</a>
+
+<div class="page-header">
+    <h2>Control de Asistencia</h2>
+    <p>Registrá ingresos y consultá el historial de asistencias.</p>
+</div>
+
+<div class="grid-2" style="margin-bottom: 24px;">
+    <!-- Panel de ingreso -->
+    <div class="card">
+        <div class="card-title" style="margin-bottom: 20px;">
+            <i class="fas fa-user-check" style="color: var(--accent-blue)"></i>
+            Registrar Ingreso
+        </div>
+
+        <div id="asistencia-result" style="display:none; padding: 16px; border-radius: 10px; margin-bottom: 16px; font-size: 16px; font-weight: 600;"></div>
+
+        <div class="form-group">
+            <label class="form-label">Últimos 3 dígitos del DNI</label>
+            <input type="text"
+                   id="dni-input"
+                   class="form-control"
+                   placeholder="000"
+                   maxlength="3"
+                   style="font-size: 42px; text-align: center; letter-spacing: 8px; font-weight: 900; height: 80px;"
+                   autofocus>
+        </div>
+
+        <button onclick="registrarIngreso()" class="btn btn-blue" style="width: 100%; padding: 14px; font-size: 16px;">
+            <i class="fas fa-sign-in-alt"></i> Registrar Ingreso
+        </button>
+
+        <p style="text-align:center; font-size: 12px; color: var(--text-muted); margin-top: 12px;">
+            Presioná <kbd style="background: var(--bg-card2); border: 1px solid var(--border); padding: 2px 6px; border-radius: 4px;">Enter</kbd> para confirmar
+        </p>
+    </div>
+
+    <!-- Estadísticas del día -->
+    <div class="card">
+        <div class="card-title" style="margin-bottom: 20px;">
+            <i class="fas fa-chart-bar" style="color: var(--accent-yellow)"></i>
+            Hoy — {{ hoy.strftime('%d/%m/%Y') }}
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px;">
+            <div style="text-align: center; padding: 20px; background: var(--bg-card2); border-radius: 12px;">
+                <div style="font-family: 'Bebas Neue', sans-serif; font-size: 48px; color: var(--accent-blue); line-height: 1;">{{ ingresos_hoy }}</div>
+                <div style="font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px;">Ingresos hoy</div>
+            </div>
+            <div style="text-align: center; padding: 20px; background: var(--bg-card2); border-radius: 12px;">
+                <div style="font-family: 'Bebas Neue', sans-serif; font-size: 48px; color: var(--accent-green); line-height: 1;">{{ ingresos_semana }}</div>
+                <div style="font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px;">Esta semana</div>
+            </div>
+        </div>
+
+        <!-- Distribución por clase -->
+        {% if por_clase %}
+        <div style="font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin-bottom: 12px;">Por clase hoy</div>
+        {% for clase, cantidad in por_clase.items() %}
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <span class="badge badge-blue">{{ clase }}</span>
+            <div style="flex: 1; margin: 0 12px; background: var(--bg-card2); border-radius: 4px; height: 6px; overflow: hidden;">
+                <div style="height: 100%; background: var(--accent-blue); width: {{ (cantidad / ingresos_hoy * 100) if ingresos_hoy > 0 else 0 }}%; border-radius: 4px;"></div>
+            </div>
+            <span style="font-size: 13px; font-weight: 700;">{{ cantidad }}</span>
+        </div>
+        {% endfor %}
+        {% endif %}
+    </div>
+</div>
+
+<!-- HISTORIAL -->
+<div class="card">
+    <div class="card-header">
+        <div class="card-title">
+            <i class="fas fa-history" style="color: var(--text-muted)"></i>
+            Historial Reciente
+        </div>
+        <div style="display:flex; gap: 10px;">
+            <div class="search-box">
+                <i class="fas fa-search"></i>
+                <input type="text" class="form-control" id="searchAsist" placeholder="Buscar alumno...">
+            </div>
+        </div>
+    </div>
+
+    {% if historial %}
+    <div class="table-wrapper">
+        <table>
+            <thead>
+                <tr>
+                    <th>Alumno</th>
+                    <th>Clase</th>
+                    <th>DNI</th>
+                    <th>Fecha y Hora</th>
+                    <th>Estado</th>
+                </tr>
+            </thead>
+            <tbody id="historialBody">
+                {% for a in historial %}
+                <tr class="hist-row" data-nombre="{{ a.nombre|lower }}">
+                    <td>
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <div style="width: 32px; height: 32px; background: rgba(59,130,246,0.1); border: 1px solid rgba(59,130,246,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; color: var(--accent-blue); font-size: 13px;">
+                                {{ a.nombre[0]|upper }}
+                            </div>
+                            <span style="font-weight: 600;">{{ a.nombre }}</span>
+                        </div>
+                    </td>
+                    <td>
+                        {% if a.clase %}
+                        <span class="badge badge-blue">{{ a.clase }}</span>
+                        {% else %}—{% endif %}
+                    </td>
+                    <td><span style="font-family: monospace; font-weight: 700; letter-spacing: 2px;">{{ a.dni_fin }}</span></td>
+                    <td style="color: var(--text-muted); font-size: 13px;">
+                        {{ a.ultima_asistencia.strftime('%d/%m/%Y · %H:%M') }}
+                    </td>
+                    <td>
+                        {% if a.deuda %}
+                        <span class="badge badge-danger">Con deuda</span>
+                        {% else %}
+                        <span class="badge badge-success">Al día</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <i class="fas fa-user-clock"></i>
+        <h3>Sin registros de asistencia</h3>
+        <p>Los ingresos aparecerán aquí una vez registrados</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.getElementById('dni-input').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') registrarIngreso();
+});
+
+function registrarIngreso() {
+    const dni = document.getElementById('dni-input').value.trim();
+    if (!dni || dni.length !== 3) {
+        showResult('Ingresá exactamente 3 dígitos', 'error');
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('dni', dni);
+
+    fetch('/asistencia', { method: 'POST', body: formData })
+    .then(r => r.json())
+    .then(data => {
+        showResult(data.msg, data.status);
+        if (data.status === 'success') {
+            document.getElementById('dni-input').value = '';
+            setTimeout(() => location.reload(), 1500);
+        }
+    })
+    .catch(() => showResult('Error de conexión', 'error'));
+}
+
+function showResult(msg, status) {
+    const el = document.getElementById('asistencia-result');
+    el.style.display = 'block';
+    el.style.background = status === 'success' ? 'rgba(34,197,94,0.1)' : 'rgba(224,48,48,0.1)';
+    el.style.border = `1px solid ${status === 'success' ? 'rgba(34,197,94,0.3)' : 'rgba(224,48,48,0.3)'}`;
+    el.style.color = status === 'success' ? 'var(--accent-green)' : '#ff6b6b';
+    el.innerHTML = (status === 'success' ? '✅ ' : '❌ ') + msg;
+    setTimeout(() => el.style.display = 'none', 4000);
+}
+
+document.getElementById('searchAsist').addEventListener('input', function() {
+    const q = this.value.toLowerCase();
+    document.querySelectorAll('.hist-row').forEach(r => {
+        r.style.display = r.dataset.nombre.includes(q) ? '' : 'none';
+    });
+});
+</script>
+{% endblock %}

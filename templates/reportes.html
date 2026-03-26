@@ -1,0 +1,226 @@
+{% extends "base.html" %}
+{% block title %}Reportes — Box Gym{% endblock %}
+
+{% block extra_head %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<a href="{{ url_for('index') }}" class="back-link">
+    <i class="fas fa-arrow-left"></i> Volver al Dashboard
+</a>
+
+<div class="page-header">
+    <h2>Reportes y Estadísticas</h2>
+    <p>Análisis financiero y de asistencia del gimnasio.</p>
+</div>
+
+<!-- KPIs PRINCIPALES -->
+<div class="grid-4" style="margin-bottom: 24px;">
+    <div class="stat-card">
+        <div class="stat-label">Ingresos del Mes</div>
+        <div class="stat-value" style="color: var(--accent-green);">${{ "%.0f"|format(kpis.ventas_mes) }}</div>
+        <div class="stat-sub">vs mes anterior: {{ kpis.variacion_ventas }}%</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Gastos del Mes</div>
+        <div class="stat-value" style="color: var(--accent-red);">${{ "%.0f"|format(kpis.gastos_mes) }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Rentabilidad</div>
+        <div class="stat-value" style="color: {{ 'var(--accent-green)' if kpis.balance_mes >= 0 else 'var(--accent-red)' }};">
+            ${{ "%.0f"|format(kpis.balance_mes) }}
+        </div>
+        <div class="stat-sub">Ventas − Gastos</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Asistencias del Mes</div>
+        <div class="stat-value" style="color: var(--accent-blue);">{{ kpis.asistencias_mes }}</div>
+        <div class="stat-sub">Promedio: {{ kpis.promedio_diario }}/día</div>
+    </div>
+</div>
+
+<div class="grid-2" style="margin-bottom: 24px;">
+    <!-- GRÁFICO VENTAS Y GASTOS -->
+    <div class="card">
+        <div class="card-title" style="margin-bottom: 20px;">
+            <i class="fas fa-chart-line" style="color: var(--accent-green)"></i>
+            Ventas vs Gastos — Últimos 7 días
+        </div>
+        <canvas id="ventasChart" height="200"></canvas>
+    </div>
+
+    <!-- DISTRIBUCIÓN CLASES -->
+    <div class="card">
+        <div class="card-title" style="margin-bottom: 20px;">
+            <i class="fas fa-chart-pie" style="color: var(--accent-blue)"></i>
+            Distribución por Tipo de Clase
+        </div>
+        <canvas id="clasesChart" height="200"></canvas>
+        <div style="display: flex; gap: 12px; flex-wrap: wrap; margin-top: 16px; justify-content: center;">
+            {% for item in kpis.por_clase %}
+            <div style="display: flex; align-items: center; gap: 6px; font-size: 12px;">
+                <div style="width: 10px; height: 10px; border-radius: 50%; background: {{ loop.cycle('var(--accent-blue)', 'var(--accent-red)', 'var(--accent-green)', 'var(--accent-yellow)') }};"></div>
+                {{ item.clase }}: {{ item.cantidad }}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- TABLA RESUMEN MENSUAL -->
+<div class="card" style="margin-bottom: 24px;">
+    <div class="card-title" style="margin-bottom: 20px;">
+        <i class="fas fa-table" style="color: var(--text-muted)"></i>
+        Resumen de los Últimos 30 Días
+    </div>
+    <div class="table-wrapper">
+        <table>
+            <thead>
+                <tr>
+                    <th>Fecha</th>
+                    <th style="text-align:right;">Ventas</th>
+                    <th style="text-align:right;">Gastos</th>
+                    <th style="text-align:right;">Balance</th>
+                    <th style="text-align:right;">Asistencias</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in kpis.resumen_dias %}
+                <tr>
+                    <td style="color: var(--text-muted); font-size: 13px;">{{ row.fecha }}</td>
+                    <td style="text-align:right; color: var(--accent-green); font-weight: 600;">${{ "%.0f"|format(row.ventas) }}</td>
+                    <td style="text-align:right; color: var(--accent-red);">${{ "%.0f"|format(row.gastos) }}</td>
+                    <td style="text-align:right; font-weight: 700; color: {{ 'var(--accent-green)' if row.balance >= 0 else 'var(--accent-red)' }};">
+                        ${{ "%.0f"|format(row.balance) }}
+                    </td>
+                    <td style="text-align:right; color: var(--accent-blue);">{{ row.asistencias }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- TOP PRODUCTOS -->
+<div class="grid-2">
+    <div class="card">
+        <div class="card-title" style="margin-bottom: 20px;">
+            <i class="fas fa-star" style="color: var(--accent-yellow)"></i>
+            Productos más Vendidos
+        </div>
+        {% if kpis.top_productos %}
+        {% for p in kpis.top_productos %}
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border);">
+            <div>
+                <div style="font-weight: 600; font-size: 14px;">{{ p.item }}</div>
+                <div style="font-size: 11px; color: var(--text-muted);">{{ p.cantidad }} ventas</div>
+            </div>
+            <div style="font-weight: 700; color: var(--accent-green);">${{ "%.0f"|format(p.total) }}</div>
+        </div>
+        {% endfor %}
+        {% else %}
+        <div class="empty-state" style="padding: 30px;">
+            <p>Sin datos suficientes</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="card">
+        <div class="card-title" style="margin-bottom: 20px;">
+            <i class="fas fa-exclamation-triangle" style="color: var(--accent-red)"></i>
+            Alumnos con Deuda
+        </div>
+        {% if kpis.deudores %}
+        {% for a in kpis.deudores %}
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border);">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <div style="width: 32px; height: 32px; background: rgba(224,48,48,0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; color: var(--accent-red); font-size: 13px;">
+                    {{ a.nombre[0]|upper }}
+                </div>
+                <div>
+                    <div style="font-weight: 600; font-size: 14px;">{{ a.nombre }}</div>
+                    <div style="font-size: 11px; color: var(--text-muted);">{{ a.clase or 'Sin clase' }}</div>
+                </div>
+            </div>
+            <a href="{{ url_for('editar_alumno', id=a.id) }}" class="btn btn-outline btn-sm">Gestionar</a>
+        </div>
+        {% endfor %}
+        {% else %}
+        <div class="empty-state" style="padding: 30px;">
+            <i class="fas fa-check-circle" style="color: var(--accent-green); font-size: 32px;"></i>
+            <p style="margin-top: 10px; color: var(--accent-green);">¡Todos los alumnos al día!</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+const chartDefaults = {
+    color: 'rgba(240,242,247,0.7)',
+    font: { family: 'Inter', size: 12 }
+};
+
+Chart.defaults.color = chartDefaults.color;
+Chart.defaults.font = chartDefaults.font;
+
+// VENTAS VS GASTOS
+const ventasData = {{ kpis.chart_ventas_labels | tojson }};
+const ventasVals = {{ kpis.chart_ventas_values | tojson }};
+const gastosVals = {{ kpis.chart_gastos_values | tojson }};
+
+new Chart(document.getElementById('ventasChart'), {
+    type: 'bar',
+    data: {
+        labels: ventasData,
+        datasets: [
+            {
+                label: 'Ventas',
+                data: ventasVals,
+                backgroundColor: 'rgba(34, 197, 94, 0.7)',
+                borderRadius: 6,
+            },
+            {
+                label: 'Gastos',
+                data: gastosVals,
+                backgroundColor: 'rgba(224, 48, 48, 0.7)',
+                borderRadius: 6,
+            }
+        ]
+    },
+    options: {
+        responsive: true,
+        plugins: { legend: { position: 'top' } },
+        scales: {
+            x: { grid: { color: 'rgba(42,48,64,0.8)' } },
+            y: { grid: { color: 'rgba(42,48,64,0.8)' }, ticks: { callback: v => '$' + v } }
+        }
+    }
+});
+
+// CLASES
+const clasesLabels = {{ kpis.chart_clases_labels | tojson }};
+const clasesVals = {{ kpis.chart_clases_values | tojson }};
+
+if (clasesLabels.length > 0) {
+    new Chart(document.getElementById('clasesChart'), {
+        type: 'doughnut',
+        data: {
+            labels: clasesLabels,
+            datasets: [{
+                data: clasesVals,
+                backgroundColor: ['rgba(59,130,246,0.8)', 'rgba(224,48,48,0.8)', 'rgba(34,197,94,0.8)', 'rgba(245,158,11,0.8)'],
+                borderWidth: 0,
+            }]
+        },
+        options: {
+            responsive: true,
+            cutout: '65%',
+            plugins: { legend: { display: false } }
+        }
+    });
+}
+</script>
+{% endblock %}
