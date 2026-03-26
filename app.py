@@ -263,6 +263,114 @@ def alumno_compras(id):
     ventas = Venta.query.filter_by(alumno_id=id).order_by(Venta.fecha.desc()).all()
     return render_template('alumno_compras.html', alumno=alumno, ventas=ventas)
 
+# ====================== IMPORTACIÓN MASIVA DE ALUMNOS ======================
+
+@app.route('/alumnos/importar', methods=['POST'])
+@login_required
+def importar_alumnos_excel():
+    if current_user.role != 'admin':
+        flash('Solo administradores pueden importar alumnos', 'error')
+        return redirect(url_for('alumnos'))
+    
+    if 'archivo' not in request.files:
+        flash('No se seleccionó ningún archivo', 'error')
+        return redirect(url_for('alumnos'))
+    
+    archivo = request.files['archivo']
+    if archivo.filename == '':
+        flash('No se seleccionó ningún archivo', 'error')
+        return redirect(url_for('alumnos'))
+    
+    if not archivo.filename.endswith(('.xlsx', '.xls')):
+        flash('Formato de archivo no válido. Use .xlsx o .xls', 'error')
+        return redirect(url_for('alumnos'))
+    
+    try:
+        df = pd.read_excel(archivo)
+        
+        # Normalizar nombres de columnas
+        df.columns = df.columns.str.strip().str.lower()
+        
+        # Verificar columnas requeridas
+        columnas_requeridas = ['nombre', 'dni']
+        for col in columnas_requeridas:
+            if col not in df.columns:
+                flash(f'Falta la columna requerida: {col}', 'error')
+                return redirect(url_for('alumnos'))
+        
+        importados = 0
+        errores = []
+        
+        for idx, row in df.iterrows():
+            try:
+                nombre = str(row.get('nombre', '')).strip()
+                dni = str(row.get('dni', '')).strip()
+                
+                if not nombre or not dni:
+                    errores.append(f"Fila {idx+2}: Nombre o DNI vacío")
+                    continue
+                
+                # Verificar si el alumno ya existe
+                existe = Alumno.query.filter_by(dni=dni).first()
+                if existe:
+                    errores.append(f"Fila {idx+2}: DNI {dni} ya existe como {existe.nombre}")
+                    continue
+                
+                nuevo_alumno = Alumno(
+                    nombre=nombre,
+                    dni=dni,
+                    telefono=str(row.get('telefono', '')) if pd.notna(row.get('telefono')) else '',
+                    email=str(row.get('email', '')) if pd.notna(row.get('email')) else '',
+                    clase=str(row.get('clase', '')) if pd.notna(row.get('clase')) else None,
+                    horario=str(row.get('horario', '')) if pd.notna(row.get('horario')) else None,
+                    activo=True
+                )
+                db.session.add(nuevo_alumno)
+                importados += 1
+                
+            except Exception as e:
+                errores.append(f"Fila {idx+2}: {str(e)}")
+        
+        db.session.commit()
+        
+        mensaje = f'✅ Se importaron {importados} alumnos correctamente.'
+        if errores:
+            mensaje += f' ❌ {len(errores)} errores: ' + '; '.join(errores[:5])
+            if len(errores) > 5:
+                mensaje += f' y {len(errores)-5} más...'
+        
+        flash(mensaje, 'success' if importados > 0 else 'warning')
+        
+    except Exception as e:
+        flash(f'Error al procesar el archivo: {str(e)}', 'error')
+    
+    return redirect(url_for('alumnos'))
+
+@app.route('/alumnos/plantilla')
+@login_required
+def descargar_plantilla_alumnos():
+    # Crear plantilla de ejemplo
+    datos = {
+        'nombre': ['Juan Pérez', 'María García'],
+        'dni': ['12345678', '87654321'],
+        'telefono': ['5491112345678', '5491123456789'],
+        'email': ['juan@ejemplo.com', 'maria@ejemplo.com'],
+        'clase': ['Boxeo Principiantes', 'Funcional'],
+        'horario': ['18:00-19:00', '19:00-20:00']
+    }
+    
+    df = pd.DataFrame(datos)
+    output = BytesIO()
+    df.to_excel(output, index=False, sheet_name='Alumnos')
+    output.seek(0)
+    
+    return send_file(
+        output,
+        download_name='plantilla_alumnos.xlsx',
+        as_attachment=True,
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+
 # ====================== CLASES ======================
 
 @app.route('/clases')
