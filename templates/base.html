@@ -653,6 +653,12 @@
             <span>Caja</span>
             {% if request.endpoint == 'caja' %}<i class="fas fa-chevron-right ml-auto text-xs"></i>{% endif %}
         </a>
+        
+        <a href="{{ url_for('configuracion') }}" class="flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all {% if request.endpoint == 'configuracion' %}bg-gray-700 text-white{% else %}text-gray-300 hover:bg-gray-800 hover:text-white{% endif %}">
+            <i class="fas fa-cog w-5"></i>
+            <span>Configuración</span>
+            {% if request.endpoint == 'configuracion' %}<i class="fas fa-chevron-right ml-auto text-xs"></i>{% endif %}
+        </a>
         {% endif %}
         
         <a href="{{ url_for('reportes') }}" class="flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all {% if request.endpoint == 'reportes' %}bg-gray-700 text-white{% else %}text-gray-300 hover:bg-gray-800 hover:text-white{% endif %}">
