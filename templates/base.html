@@ -6,76 +6,219 @@
     <title>{% block title %}BoxFit Gym{% endblock %}</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
         * { font-family: 'Inter', sans-serif; }
-        .sidebar { transition: transform 0.3s ease; }
+        
+        /* Animaciones */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.3s ease-out;
+        }
+        
+        /* Sidebar animación */
+        .sidebar {
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        /* Hover effects */
+        .card-hover {
+            transition: all 0.3s ease;
+        }
+        .card-hover:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 25px -12px rgba(0, 0, 0, 0.2);
+        }
+        
+        /* Scrollbar personalizado */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+        
         @media (max-width: 768px) {
-            .sidebar { transform: translateX(-100%); position: fixed; z-index: 50; height: 100vh; }
-            .sidebar.open { transform: translateX(0); }
-            .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 40; }
-            .overlay.open { display: block; }
+            .sidebar {
+                transform: translateX(-100%);
+                position: fixed;
+                z-index: 50;
+                height: 100vh;
+                overflow-y: auto;
+            }
+            .sidebar.open {
+                transform: translateX(0);
+            }
+            .overlay {
+                display: none;
+                position: fixed;
+                inset: 0;
+                background: rgba(0,0,0,0.5);
+                z-index: 40;
+                backdrop-filter: blur(2px);
+            }
+            .overlay.open {
+                display: block;
+            }
+        }
+        
+        /* Botones con efecto */
+        .btn-effect {
+            transition: all 0.2s ease;
+        }
+        .btn-effect:active {
+            transform: scale(0.96);
+        }
+        
+        /* Tarjetas de estadísticas */
+        .stat-card {
+            background: linear-gradient(135deg, #fff 0%, #f8fafc 100%);
+            border: 1px solid #e2e8f0;
+        }
+        
+        /* Badges animados */
+        .badge-pulse {
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
         }
     </style>
+    {% block extra_head %}{% endblock %}
 </head>
-<body class="bg-gray-100">
+<body class="bg-gradient-to-br from-gray-50 to-gray-100">
     {% if current_user.is_authenticated %}
+    
     <!-- Mobile Menu Button -->
-    <button id="menuBtn" class="lg:hidden fixed top-4 left-4 z-50 bg-red-600 text-white p-2 rounded-lg shadow-lg">
+    <button id="menuBtn" class="lg:hidden fixed top-4 left-4 z-50 bg-gradient-to-r from-red-600 to-red-700 text-white p-3 rounded-xl shadow-lg btn-effect">
         <i class="fas fa-bars text-xl"></i>
     </button>
     
     <div id="overlay" class="overlay"></div>
     
-    <!-- Sidebar -->
-    <aside id="sidebar" class="sidebar fixed lg:static w-64 bg-gray-900 text-white h-full shadow-xl z-40">
+    <!-- Sidebar Mejorada -->
+    <aside id="sidebar" class="sidebar fixed lg:static w-72 bg-gradient-to-b from-gray-900 to-gray-800 text-white shadow-2xl z-40">
         <div class="p-6 border-b border-gray-700">
-            <h1 class="text-2xl font-bold flex items-center gap-2">
-                <i class="fas fa-dumbbell text-red-500"></i>
-                <span>BoxFit Gym</span>
-            </h1>
-            <p class="text-sm text-gray-400 mt-1">{{ current_user.username }} ({{ current_user.role }})</p>
+            <div class="flex items-center gap-3">
+                <div class="bg-gradient-to-r from-red-500 to-red-600 w-12 h-12 rounded-xl flex items-center justify-center shadow-lg">
+                    <i class="fas fa-dumbbell text-2xl text-white"></i>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-bold tracking-tight">BoxFit Gym</h1>
+                    <p class="text-xs text-gray-400 mt-1">Sistema de Gestión</p>
+                </div>
+            </div>
         </div>
         
-        <nav class="p-4">
-            <a href="{{ url_for('index') }}" class="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-800 {% if request.endpoint == 'index' %}bg-gray-800{% endif %}">
-                <i class="fas fa-chart-line w-5"></i> Dashboard
+        <div class="p-4 border-b border-gray-700/50">
+            <div class="flex items-center gap-3 bg-gray-800/50 rounded-xl p-3">
+                <div class="bg-gradient-to-r from-red-500 to-red-600 w-10 h-10 rounded-full flex items-center justify-center">
+                    <i class="fas fa-user text-white text-sm"></i>
+                </div>
+                <div class="flex-1">
+                    <p class="text-sm font-semibold">{{ current_user.username }}</p>
+                    <p class="text-xs text-gray-400">
+                        {% if current_user.role == 'admin' %}
+                        <i class="fas fa-shield-alt text-red-400 mr-1"></i>Administrador
+                        {% else %}
+                        <i class="fas fa-user-check text-green-400 mr-1"></i>Operador
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        <nav class="flex-1 p-4 space-y-1">
+            <a href="{{ url_for('index') }}" class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all {% if request.endpoint == 'index' %}bg-red-600 text-white shadow-lg{% else %}text-gray-300 hover:bg-gray-700/50 hover:text-white{% endif %}">
+                <i class="fas fa-chart-line w-5"></i>
+                <span>Dashboard</span>
+                {% if request.endpoint == 'index' %}
+                <i class="fas fa-arrow-right ml-auto text-sm"></i>
+                {% endif %}
             </a>
-            <a href="{{ url_for('alumnos') }}" class="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-800 mt-1 {% if request.endpoint == 'alumnos' or request.endpoint == 'nuevo_alumno' or request.endpoint == 'editar_alumno' %}bg-gray-800{% endif %}">
-                <i class="fas fa-users w-5"></i> Alumnos
+            
+            <a href="{{ url_for('alumnos') }}" class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all {% if 'alumno' in request.endpoint %}bg-red-600 text-white shadow-lg{% else %}text-gray-300 hover:bg-gray-700/50 hover:text-white{% endif %}">
+                <i class="fas fa-users w-5"></i>
+                <span>Alumnos</span>
+                {% if 'alumno' in request.endpoint %}
+                <i class="fas fa-arrow-right ml-auto text-sm"></i>
+                {% endif %}
             </a>
-            <a href="{{ url_for('clases') }}" class="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-800 mt-1 {% if request.endpoint == 'clases' %}bg-gray-800{% endif %}">
-                <i class="fas fa-calendar-alt w-5"></i> Clases
+            
+            <a href="{{ url_for('clases') }}" class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all {% if request.endpoint == 'clases' %}bg-red-600 text-white shadow-lg{% else %}text-gray-300 hover:bg-gray-700/50 hover:text-white{% endif %}">
+                <i class="fas fa-calendar-alt w-5"></i>
+                <span>Clases</span>
+                {% if request.endpoint == 'clases' %}
+                <i class="fas fa-arrow-right ml-auto text-sm"></i>
+                {% endif %}
             </a>
-            <a href="{{ url_for('ventas') }}" class="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-800 mt-1 {% if request.endpoint == 'ventas' %}bg-gray-800{% endif %}">
-                <i class="fas fa-shopping-cart w-5"></i> Ventas
+            
+            <a href="{{ url_for('ventas') }}" class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all {% if request.endpoint == 'ventas' %}bg-red-600 text-white shadow-lg{% else %}text-gray-300 hover:bg-gray-700/50 hover:text-white{% endif %}">
+                <i class="fas fa-shopping-cart w-5"></i>
+                <span>Ventas</span>
+                {% if request.endpoint == 'ventas' %}
+                <i class="fas fa-arrow-right ml-auto text-sm"></i>
+                {% endif %}
             </a>
+            
             {% if current_user.role == 'admin' %}
-            <a href="{{ url_for('usuarios') }}" class="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-800 mt-1 {% if request.endpoint == 'usuarios' %}bg-gray-800{% endif %}">
-                <i class="fas fa-user-shield w-5"></i> Usuarios
+            <a href="{{ url_for('usuarios') }}" class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all {% if request.endpoint == 'usuarios' %}bg-red-600 text-white shadow-lg{% else %}text-gray-300 hover:bg-gray-700/50 hover:text-white{% endif %}">
+                <i class="fas fa-user-shield w-5"></i>
+                <span>Usuarios</span>
+                {% if request.endpoint == 'usuarios' %}
+                <i class="fas fa-arrow-right ml-auto text-sm"></i>
+                {% endif %}
             </a>
             {% endif %}
-            <a href="{{ url_for('reportes') }}" class="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-800 mt-1 {% if request.endpoint == 'reportes' %}bg-gray-800{% endif %}">
-                <i class="fas fa-chart-bar w-5"></i> Reportes
+            
+            <a href="{{ url_for('reportes') }}" class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all {% if request.endpoint == 'reportes' %}bg-red-600 text-white shadow-lg{% else %}text-gray-300 hover:bg-gray-700/50 hover:text-white{% endif %}">
+                <i class="fas fa-chart-bar w-5"></i>
+                <span>Reportes</span>
+                {% if request.endpoint == 'reportes' %}
+                <i class="fas fa-arrow-right ml-auto text-sm"></i>
+                {% endif %}
             </a>
-            <div class="border-t border-gray-700 mt-4 pt-4">
-                <a href="{{ url_for('logout') }}" class="flex items-center gap-3 p-3 rounded-lg hover:bg-red-600 text-red-300 hover:text-white">
-                    <i class="fas fa-sign-out-alt w-5"></i> Cerrar Sesión
-                </a>
-            </div>
         </nav>
+        
+        <div class="p-4 border-t border-gray-700">
+            <a href="{{ url_for('logout') }}" class="flex items-center gap-3 px-4 py-3 rounded-xl bg-gray-800/50 text-gray-300 hover:bg-red-600/20 hover:text-red-400 transition-all group">
+                <i class="fas fa-sign-out-alt w-5 group-hover:rotate-180 transition-transform"></i>
+                <span>Cerrar Sesión</span>
+            </a>
+        </div>
     </aside>
     
     <!-- Main Content -->
-    <main class="lg:ml-64 p-4 md:p-6 min-h-screen">
-        <!-- Flash Messages -->
+    <main class="lg:ml-72 p-4 md:p-8 min-h-screen fade-in">
+        <!-- Flash Messages Mejorados -->
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
-                {% for category, message in messages %}
-                    <div class="p-4 mb-4 rounded-lg shadow {% if category == 'success' %}bg-green-100 text-green-800 border-l-4 border-green-500{% elif category == 'error' %}bg-red-100 text-red-800 border-l-4 border-red-500{% else %}bg-blue-100 text-blue-800 border-l-4 border-blue-500{% endif %}">
-                        {{ message }}
-                    </div>
-                {% endfor %}
+                <div class="fixed top-4 right-4 z-50 space-y-2 max-w-md">
+                    {% for category, message in messages %}
+                        <div class="flex items-center gap-3 p-4 rounded-xl shadow-xl animate-slide-down {% if category == 'success' %}bg-green-500 text-white{% elif category == 'error' %}bg-red-500 text-white{% else %}bg-blue-500 text-white{% endif %}">
+                            <i class="fas fa-{% if category == 'success' %}check-circle{% elif category == 'error' %}exclamation-circle{% else %}info-circle{% endif %} text-xl"></i>
+                            <span class="flex-1">{{ message }}</span>
+                            <button onclick="this.parentElement.remove()" class="text-white/70 hover:text-white">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    {% endfor %}
+                </div>
             {% endif %}
         {% endwith %}
         
@@ -83,6 +226,7 @@
     </main>
     
     <script>
+        // Mobile menu
         const menuBtn = document.getElementById('menuBtn');
         const sidebar = document.getElementById('sidebar');
         const overlay = document.getElementById('overlay');
@@ -91,6 +235,7 @@
             menuBtn.addEventListener('click', () => {
                 sidebar.classList.toggle('open');
                 overlay.classList.toggle('open');
+                document.body.style.overflow = sidebar.classList.contains('open') ? 'hidden' : '';
             });
         }
         
@@ -98,13 +243,19 @@
             overlay.addEventListener('click', () => {
                 sidebar.classList.remove('open');
                 overlay.classList.remove('open');
+                document.body.style.overflow = '';
             });
         }
         
+        // Auto-hide flash messages
         setTimeout(() => {
-            document.querySelectorAll('.alert').forEach(a => a.remove());
-        }, 5000);
+            document.querySelectorAll('.animate-slide-down').forEach(msg => {
+                msg.style.opacity = '0';
+                setTimeout(() => msg.remove(), 300);
+            });
+        }, 4000);
     </script>
+    {% block extra_scripts %}{% endblock %}
     {% else %}
     {% block auth_content %}{% endblock %}
     {% endif %}

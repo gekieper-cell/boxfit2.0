@@ -3,75 +3,140 @@
 
 {% block content %}
 <div class="mb-8">
-    <h2 class="text-3xl font-bold text-gray-800">Dashboard</h2>
-    <p class="text-gray-600">Resumen general del gimnasio</p>
+    <h2 class="text-4xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">Dashboard</h2>
+    <p class="text-gray-500 mt-2">Bienvenido de vuelta, {{ current_user.username }} 👋</p>
 </div>
 
-<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-    <div class="bg-white rounded-xl shadow-lg p-6 border-l-4 border-blue-500">
-        <div class="flex items-center justify-between">
-            <div>
-                <p class="text-gray-500 text-sm">Total Alumnos</p>
-                <p class="text-3xl font-bold text-gray-800">{{ stats.total_alumnos }}</p>
+<!-- Stats Grid Mejorado -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+    <div class="stat-card rounded-2xl p-6 shadow-lg card-hover fade-in" style="animation-delay: 0.1s">
+        <div class="flex items-center justify-between mb-3">
+            <div class="bg-blue-100 p-3 rounded-xl">
+                <i class="fas fa-users text-2xl text-blue-600"></i>
             </div>
-            <i class="fas fa-users text-4xl text-blue-500 opacity-50"></i>
+            <span class="text-3xl font-bold text-gray-800">{{ stats.total_alumnos }}</span>
+        </div>
+        <p class="text-gray-600 text-sm">Total Alumnos</p>
+        <div class="mt-2 text-xs text-gray-400">
+            <i class="fas fa-chart-line mr-1"></i> Activos: {{ stats.total_alumnos - stats.total_alumnos_inactivos }}
         </div>
     </div>
     
-    <div class="bg-white rounded-xl shadow-lg p-6 border-l-4 border-yellow-500">
-        <div class="flex items-center justify-between">
-            <div>
-                <p class="text-gray-500 text-sm">Alumnos Inactivos</p>
-                <p class="text-3xl font-bold text-gray-800">{{ stats.total_alumnos_inactivos }}</p>
+    <div class="stat-card rounded-2xl p-6 shadow-lg card-hover fade-in" style="animation-delay: 0.2s">
+        <div class="flex items-center justify-between mb-3">
+            <div class="bg-yellow-100 p-3 rounded-xl">
+                <i class="fas fa-user-slash text-2xl text-yellow-600"></i>
             </div>
-            <i class="fas fa-user-slash text-4xl text-yellow-500 opacity-50"></i>
+            <span class="text-3xl font-bold text-gray-800">{{ stats.total_alumnos_inactivos }}</span>
+        </div>
+        <p class="text-gray-600 text-sm">Alumnos Inactivos</p>
+        <div class="mt-2 text-xs text-gray-400">
+            <i class="fas fa-calendar mr-1"></i> Sin actividad reciente
         </div>
     </div>
     
-    <div class="bg-white rounded-xl shadow-lg p-6 border-l-4 border-green-500">
-        <div class="flex items-center justify-between">
-            <div>
-                <p class="text-gray-500 text-sm">Ventas Hoy</p>
-                <p class="text-3xl font-bold text-gray-800">{{ stats.total_ventas_hoy }}</p>
+    <div class="stat-card rounded-2xl p-6 shadow-lg card-hover fade-in" style="animation-delay: 0.3s">
+        <div class="flex items-center justify-between mb-3">
+            <div class="bg-green-100 p-3 rounded-xl">
+                <i class="fas fa-shopping-cart text-2xl text-green-600"></i>
             </div>
-            <i class="fas fa-shopping-cart text-4xl text-green-500 opacity-50"></i>
+            <span class="text-3xl font-bold text-gray-800">{{ stats.total_ventas_hoy }}</span>
+        </div>
+        <p class="text-gray-600 text-sm">Ventas Hoy</p>
+        <div class="mt-2 text-xs text-gray-400">
+            <i class="fas fa-clock mr-1"></i> Registradas hoy
         </div>
     </div>
     
-    <div class="bg-white rounded-xl shadow-lg p-6 border-l-4 border-red-500">
-        <div class="flex items-center justify-between">
-            <div>
-                <p class="text-gray-500 text-sm">Monto Ventas Hoy</p>
-                <p class="text-3xl font-bold text-gray-800">${{ "%.0f"|format(stats.monto_ventas_hoy) }}</p>
+    <div class="stat-card rounded-2xl p-6 shadow-lg card-hover fade-in" style="animation-delay: 0.4s">
+        <div class="flex items-center justify-between mb-3">
+            <div class="bg-red-100 p-3 rounded-xl">
+                <i class="fas fa-dollar-sign text-2xl text-red-600"></i>
             </div>
-            <i class="fas fa-dollar-sign text-4xl text-red-500 opacity-50"></i>
+            <span class="text-3xl font-bold text-gray-800">${{ "%.0f"|format(stats.monto_ventas_hoy) }}</span>
+        </div>
+        <p class="text-gray-600 text-sm">Monto Ventas Hoy</p>
+        <div class="mt-2 text-xs text-gray-400">
+            <i class="fas fa-trend-up mr-1"></i> Ingresos del día
         </div>
     </div>
 </div>
 
 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-    <div class="bg-white rounded-xl shadow-lg p-6">
-        <h3 class="text-lg font-bold text-gray-800 mb-4">Acciones Rápidas</h3>
+    <!-- Acciones Rápidas Mejorado -->
+    <div class="bg-white rounded-2xl shadow-lg p-6 card-hover">
+        <div class="flex items-center gap-3 mb-6">
+            <div class="bg-gradient-to-r from-blue-500 to-blue-600 w-10 h-10 rounded-xl flex items-center justify-center">
+                <i class="fas fa-bolt text-white"></i>
+            </div>
+            <h3 class="text-xl font-bold text-gray-800">Acciones Rápidas</h3>
+        </div>
         <div class="space-y-3">
-            <a href="{{ url_for('nuevo_alumno') }}" class="block bg-blue-50 hover:bg-blue-100 text-blue-700 p-3 rounded-lg transition">
-                <i class="fas fa-user-plus mr-2"></i> Registrar Nuevo Alumno
+            <a href="{{ url_for('nuevo_alumno') }}" class="flex items-center gap-3 bg-gradient-to-r from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-200 p-4 rounded-xl transition-all group">
+                <i class="fas fa-user-plus text-blue-600 text-xl group-hover:scale-110 transition-transform"></i>
+                <div class="flex-1">
+                    <p class="font-semibold text-gray-800">Registrar Nuevo Alumno</p>
+                    <p class="text-xs text-gray-500">Agregar un nuevo miembro al gimnasio</p>
+                </div>
+                <i class="fas fa-arrow-right text-blue-600 opacity-0 group-hover:opacity-100 transition-all"></i>
             </a>
-            <a href="{{ url_for('ventas') }}" class="block bg-green-50 hover:bg-green-100 text-green-700 p-3 rounded-lg transition">
-                <i class="fas fa-cart-plus mr-2"></i> Registrar Venta
+            
+            <a href="{{ url_for('ventas') }}" class="flex items-center gap-3 bg-gradient-to-r from-green-50 to-green-100 hover:from-green-100 hover:to-green-200 p-4 rounded-xl transition-all group">
+                <i class="fas fa-cart-plus text-green-600 text-xl group-hover:scale-110 transition-transform"></i>
+                <div class="flex-1">
+                    <p class="font-semibold text-gray-800">Registrar Venta</p>
+                    <p class="text-xs text-gray-500">Vender productos o servicios</p>
+                </div>
+                <i class="fas fa-arrow-right text-green-600 opacity-0 group-hover:opacity-100 transition-all"></i>
             </a>
-            <a href="{{ url_for('clases') }}" class="block bg-purple-50 hover:bg-purple-100 text-purple-700 p-3 rounded-lg transition">
-                <i class="fas fa-calendar mr-2"></i> Ver Horarios de Clases
+            
+            <a href="{{ url_for('clases') }}" class="flex items-center gap-3 bg-gradient-to-r from-purple-50 to-purple-100 hover:from-purple-100 hover:to-purple-200 p-4 rounded-xl transition-all group">
+                <i class="fas fa-calendar-alt text-purple-600 text-xl group-hover:scale-110 transition-transform"></i>
+                <div class="flex-1">
+                    <p class="font-semibold text-gray-800">Ver Horarios</p>
+                    <p class="text-xs text-gray-500">Consultar horarios de clases disponibles</p>
+                </div>
+                <i class="fas fa-arrow-right text-purple-600 opacity-0 group-hover:opacity-100 transition-all"></i>
             </a>
         </div>
     </div>
     
-    <div class="bg-white rounded-xl shadow-lg p-6">
-        <h3 class="text-lg font-bold text-gray-800 mb-4">Información</h3>
-        <div class="space-y-3 text-gray-600">
-            <p><i class="fas fa-clock text-blue-500 mr-2"></i> Último acceso: {{ current_user.username }}</p>
-            <p><i class="fas fa-shield-alt text-green-500 mr-2"></i> Rol: {{ current_user.role|title }}</p>
-            <p><i class="fas fa-calendar-day text-red-500 mr-2"></i> Fecha: {{ now.strftime('%d/%m/%Y') if now else '' }}</p>
+    <!-- Información del Sistema Mejorada -->
+    <div class="bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl shadow-lg p-6 text-white card-hover">
+        <div class="flex items-center gap-3 mb-6">
+            <div class="bg-white/20 w-10 h-10 rounded-xl flex items-center justify-center backdrop-blur">
+                <i class="fas fa-info-circle text-white"></i>
+            </div>
+            <h3 class="text-xl font-bold">Información del Sistema</h3>
         </div>
+        <div class="space-y-4">
+            <div class="flex justify-between items-center p-3 bg-white/10 rounded-xl">
+                <span class="text-gray-300"><i class="fas fa-user-circle mr-2"></i>Usuario</span>
+                <span class="font-semibold">{{ current_user.username }}</span>
+            </div>
+            <div class="flex justify-between items-center p-3 bg-white/10 rounded-xl">
+                <span class="text-gray-300"><i class="fas fa-shield-alt mr-2"></i>Rol</span>
+                <span class="px-3 py-1 bg-red-500/20 rounded-full text-red-300 text-sm">
+                    {{ current_user.role|title }}
+                </span>
+            </div>
+            <div class="flex justify-between items-center p-3 bg-white/10 rounded-xl">
+                <span class="text-gray-300"><i class="fas fa-calendar-day mr-2"></i>Fecha</span>
+                <span class="font-semibold">{{ now.strftime('%d/%m/%Y') if now else '' }}</span>
+            </div>
+            <div class="flex justify-between items-center p-3 bg-white/10 rounded-xl">
+                <span class="text-gray-300"><i class="fas fa-clock mr-2"></i>Hora</span>
+                <span class="font-semibold">{{ now.strftime('%H:%M') if now else '' }}</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Consejo del Día -->
+<div class="mt-6 bg-gradient-to-r from-red-50 to-orange-50 rounded-2xl p-4 border border-red-200">
+    <div class="flex items-center gap-3">
+        <i class="fas fa-lightbulb text-red-500 text-xl"></i>
+        <p class="text-gray-700 text-sm">💡 <strong>Consejo:</strong> Mantén actualizados los datos de tus alumnos para un mejor seguimiento de su progreso.</p>
     </div>
 </div>
 {% endblock %}
