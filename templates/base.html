@@ -1,690 +1,132 @@
 <!DOCTYPE html>
-<html lang="es" data-theme="light">
+<html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}BoxFit Gym{% endblock %}</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
-        
-        * {
-            font-family: 'Inter', sans-serif;
-        }
-        
-        /* ==================== TEMA CLARO (por defecto) ==================== */
-        :root, [data-theme="light"] {
-            --bg-primary: #f1f5f9;
-            --bg-secondary: #ffffff;
-            --bg-sidebar: #0f172a;
-            --text-primary: #0f172a;
-            --text-secondary: #334155;
-            --text-muted: #64748b;
-            --border-color: #e2e8f0;
-            --card-bg: #ffffff;
-            --card-header-bg: #f8fafc;
-            --hover-bg: #f1f5f9;
-            --sidebar-text: #e2e8f0;
-            --sidebar-hover: #1e293b;
-            --input-bg: #ffffff;
-            --input-border: #e2e8f0;
-            --stat-card-bg: #ffffff;
-            --success-bg: #dcfce7;
-            --success-text: #166534;
-            --danger-bg: #fee2e2;
-            --danger-text: #991b1b;
-            --warning-bg: #fef9c3;
-            --warning-text: #854d0e;
-            --info-bg: #dbeafe;
-            --info-text: #1e40af;
-        }
-        
-        /* ==================== TEMA OSCURO ==================== */
-        [data-theme="dark"] {
-            --bg-primary: #0a0c15;
-            --bg-secondary: #111827;
-            --bg-sidebar: #030712;
-            --text-primary: #f1f5f9;
-            --text-secondary: #cbd5e1;
-            --text-muted: #94a3b8;
-            --border-color: #1f2a3a;
-            --card-bg: #111827;
-            --card-header-bg: #0f172a;
-            --hover-bg: #1f2a3a;
-            --sidebar-text: #cbd5e6;
-            --sidebar-hover: #1e293b;
-            --input-bg: #1e293b;
-            --input-border: #334155;
-            --stat-card-bg: #111827;
-            --success-bg: #14532d;
-            --success-text: #86efac;
-            --danger-bg: #7f1a1a;
-            --danger-text: #fecaca;
-            --warning-bg: #854d0e;
-            --warning-text: #fef9c3;
-            --info-bg: #1e3a8a;
-            --info-text: #bfdbfe;
-        }
-        
-        body {
-            background-color: var(--bg-primary);
-            color: var(--text-primary);
-            transition: background-color 0.2s ease, color 0.2s ease;
-        }
-        
-        /* ==================== SIDEBAR ==================== */
-        .sidebar {
-            position: fixed;
-            left: 0;
-            top: 0;
-            bottom: 0;
-            width: 280px;
-            background: var(--bg-sidebar);
-            overflow-y: auto;
-            z-index: 100;
-            transition: transform 0.3s ease, background 0.2s;
-        }
-        
-        .sidebar::-webkit-scrollbar {
-            width: 4px;
-        }
-        
-        .sidebar::-webkit-scrollbar-track {
-            background: #1e293b;
-        }
-        
-        .sidebar::-webkit-scrollbar-thumb {
-            background: #475569;
-            border-radius: 4px;
-        }
-        
-        .sidebar a {
-            color: var(--sidebar-text);
-            transition: all 0.2s;
-        }
-        
-        .sidebar a:hover {
-            background: var(--sidebar-hover);
-        }
-        
-        .sidebar .active {
-            background: var(--sidebar-hover);
-            border-left: 3px solid #3b82f6;
-        }
-        
-        /* ==================== MAIN CONTENT ==================== */
-        .main-content {
-            margin-left: 280px;
-            padding: 24px 32px;
-            min-height: 100vh;
-        }
-        
-        /* ==================== CARDS ==================== */
-        .card {
-            background: var(--card-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 16px;
-            overflow: hidden;
-            transition: all 0.2s;
-        }
-        
-        .card-header {
-            padding: 16px 24px;
-            background: var(--card-header-bg);
-            border-bottom: 1px solid var(--border-color);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 12px;
-        }
-        
-        .card-header h3, .card-header .card-title {
-            font-weight: 600;
-            font-size: 16px;
-            color: var(--text-primary);
-        }
-        
-        .card-body {
-            padding: 24px;
-        }
-        
-        /* ==================== STATS CARDS ==================== */
-        .stat-card {
-            background: var(--stat-card-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 16px;
-            padding: 20px;
-            transition: all 0.2s;
-        }
-        
-        .stat-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-        }
-        
-        /* ==================== FORMULARIOS ==================== */
-        .form-group {
-            margin-bottom: 20px;
-        }
-        
-        .form-label {
-            display: block;
-            font-size: 13px;
-            font-weight: 600;
-            color: var(--text-secondary);
-            margin-bottom: 8px;
-        }
-        
-        .form-control {
-            width: 100%;
-            padding: 10px 14px;
-            border: 1px solid var(--input-border);
-            border-radius: 10px;
-            font-size: 14px;
-            background: var(--input-bg);
-            color: var(--text-primary);
-            transition: all 0.2s;
-            outline: none;
-        }
-        
-        .form-control:focus {
-            border-color: #3b82f6;
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-        }
-        
-        select.form-control {
-            cursor: pointer;
-        }
-        
-        select.form-control option {
-            background: var(--input-bg);
-            color: var(--text-primary);
-        }
-        
-        /* ==================== BOTONES ==================== */
-        .btn {
-            padding: 10px 20px;
-            border-radius: 10px;
-            font-size: 14px;
-            font-weight: 500;
-            cursor: pointer;
-            border: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            transition: all 0.2s;
-        }
-        
-        .btn-primary {
-            background: #3b82f6;
-            color: white;
-        }
-        
-        .btn-primary:hover {
-            background: #2563eb;
-            transform: translateY(-1px);
-        }
-        
-        .btn-success {
-            background: #10b981;
-            color: white;
-        }
-        
-        .btn-success:hover {
-            background: #059669;
-            transform: translateY(-1px);
-        }
-        
-        .btn-danger {
-            background: #ef4444;
-            color: white;
-        }
-        
-        .btn-danger:hover {
-            background: #dc2626;
-            transform: translateY(-1px);
-        }
-        
-        .btn-warning {
-            background: #f59e0b;
-            color: white;
-        }
-        
-        .btn-warning:hover {
-            background: #d97706;
-            transform: translateY(-1px);
-        }
-        
-        .btn-outline {
-            background: transparent;
-            border: 1px solid var(--border-color);
-            color: var(--text-primary);
-        }
-        
-        .btn-outline:hover {
-            background: var(--hover-bg);
-            border-color: var(--text-muted);
-        }
-        
-        .btn-sm {
-            padding: 6px 12px;
-            font-size: 12px;
-        }
-        
-        /* ==================== TABLAS ==================== */
-        .table-container {
-            overflow-x: auto;
-        }
-        
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        
-        th {
-            text-align: left;
-            padding: 12px 16px;
-            background: var(--card-header-bg);
-            color: var(--text-secondary);
-            font-size: 12px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            border-bottom: 1px solid var(--border-color);
-        }
-        
-        td {
-            padding: 12px 16px;
-            font-size: 14px;
-            border-bottom: 1px solid var(--border-color);
-            color: var(--text-primary);
-        }
-        
-        tr:hover td {
-            background: var(--hover-bg);
-        }
-        
-        /* ==================== BADGES ==================== */
-        .badge {
-            display: inline-flex;
-            align-items: center;
-            padding: 4px 10px;
-            border-radius: 20px;
-            font-size: 11px;
-            font-weight: 600;
-        }
-        
-        .badge-success {
-            background: var(--success-bg);
-            color: var(--success-text);
-        }
-        
-        .badge-danger {
-            background: var(--danger-bg);
-            color: var(--danger-text);
-        }
-        
-        .badge-warning {
-            background: var(--warning-bg);
-            color: var(--warning-text);
-        }
-        
-        .badge-info {
-            background: var(--info-bg);
-            color: var(--info-text);
-        }
-        
-        .badge-admin {
-            background: #3b82f6;
-            color: white;
-        }
-        
-        .badge-operador {
-            background: var(--hover-bg);
-            color: var(--text-secondary);
-        }
-        
-        /* ==================== ALERTAS ==================== */
-        .alert {
-            padding: 12px 16px;
-            border-radius: 12px;
-            margin-bottom: 20px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-size: 14px;
-        }
-        
-        .alert-success {
-            background: var(--success-bg);
-            color: var(--success-text);
-            border: 1px solid var(--success-text);
-        }
-        
-        .alert-error {
-            background: var(--danger-bg);
-            color: var(--danger-text);
-            border: 1px solid var(--danger-text);
-        }
-        
-        .alert-warning {
-            background: var(--warning-bg);
-            color: var(--warning-text);
-            border: 1px solid var(--warning-text);
-        }
-        
-        .alert-info {
-            background: var(--info-bg);
-            color: var(--info-text);
-            border: 1px solid var(--info-text);
-        }
-        
-        /* ==================== DARK MODE TOGGLE ==================== */
-        .theme-toggle {
-            position: fixed;
-            bottom: 24px;
-            right: 24px;
-            width: 52px;
-            height: 52px;
-            border-radius: 50%;
-            background: var(--card-bg);
-            border: 1px solid var(--border-color);
-            color: var(--text-primary);
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 22px;
-            z-index: 200;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-            transition: all 0.2s;
-        }
-        
-        .theme-toggle:hover {
-            transform: scale(1.08);
-        }
-        
-        /* ==================== MOBILE MENU ==================== */
-        .mobile-menu-btn {
-            display: none;
-            position: fixed;
-            top: 16px;
-            left: 16px;
-            z-index: 150;
-            background: var(--bg-sidebar);
-            border: none;
-            color: white;
-            width: 44px;
-            height: 44px;
-            border-radius: 12px;
-            cursor: pointer;
-            font-size: 20px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-        }
-        
-        .overlay {
-            display: none;
-            position: fixed;
-            inset: 0;
-            background: rgba(0, 0, 0, 0.6);
-            z-index: 90;
-            backdrop-filter: blur(2px);
-        }
-        
-        /* ==================== EMPTY STATE ==================== */
-        .empty-state {
-            text-align: center;
-            padding: 60px 20px;
-            color: var(--text-muted);
-        }
-        
-        .empty-state i {
-            font-size: 48px;
-            margin-bottom: 16px;
-            opacity: 0.5;
-        }
-        
-        .empty-state h3 {
-            font-size: 18px;
-            margin-bottom: 8px;
-            color: var(--text-primary);
-        }
-        
-        .empty-state p {
-            font-size: 14px;
-        }
-        
-        /* ==================== SCROLLBAR ==================== */
-        ::-webkit-scrollbar {
-            width: 8px;
-            height: 8px;
-        }
-        
-        ::-webkit-scrollbar-track {
-            background: var(--border-color);
-            border-radius: 4px;
-        }
-        
-        ::-webkit-scrollbar-thumb {
-            background: var(--text-muted);
-            border-radius: 4px;
-        }
-        
-        ::-webkit-scrollbar-thumb:hover {
-            background: var(--text-secondary);
-        }
-        
-        /* ==================== RESPONSIVE ==================== */
-        @media (max-width: 1024px) {
-            .sidebar {
-                transform: translateX(-100%);
-            }
-            
-            .sidebar.open {
-                transform: translateX(0);
-            }
-            
-            .mobile-menu-btn {
-                display: flex;
-                align-items: center;
-                justify-content: center;
-            }
-            
-            .overlay.open {
-                display: block;
-            }
-            
-            .main-content {
-                margin-left: 0;
-                padding: 80px 20px 24px;
-            }
-        }
-        
-        @media (max-width: 640px) {
-            .main-content {
-                padding: 80px 16px 16px;
-            }
-            
-            .card-header {
-                flex-direction: column;
-                align-items: flex-start;
-            }
-            
-            .stat-card {
-                padding: 16px;
-            }
-            
-            .stat-card .stat-value {
-                font-size: 24px;
-            }
-        }
-        
-        /* ==================== UTILIDADES ==================== */
+        * { font-family: system-ui, -apple-system, sans-serif; }
+        .sidebar { position: fixed; left: 0; top: 0; bottom: 0; width: 260px; background: #1f2937; overflow-y: auto; z-index: 40; }
+        .main-content { margin-left: 260px; padding: 24px; min-height: 100vh; background: #f3f4f6; }
+        .card { background: white; border-radius: 12px; border: 1px solid #e5e7eb; overflow: hidden; margin-bottom: 24px; }
+        .card-header { padding: 16px 20px; background: #f9fafb; border-bottom: 1px solid #e5e7eb; font-weight: 600; display: flex; justify-content: space-between; align-items: center; }
+        .card-body { padding: 20px; }
+        .btn { padding: 8px 16px; border-radius: 8px; font-weight: 500; cursor: pointer; border: none; display: inline-flex; align-items: center; gap: 8px; }
+        .btn-primary { background: #3b82f6; color: white; }
+        .btn-success { background: #10b981; color: white; }
+        .btn-danger { background: #ef4444; color: white; }
+        .btn-outline { background: white; border: 1px solid #d1d5db; color: #374151; }
+        .form-control { width: 100%; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 8px; }
+        .form-label { display: block; font-size: 14px; font-weight: 500; margin-bottom: 6px; color: #374151; }
+        .sidebar a { display: block; padding: 10px 20px; color: #9ca3af; text-decoration: none; transition: all 0.2s; }
+        .sidebar a:hover { background: #374151; color: white; }
+        .sidebar a.active { background: #374151; color: white; }
+        .stat-card { background: white; border: 1px solid #e5e7eb; border-radius: 12px; padding: 16px; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid #e5e7eb; }
+        th { background: #f9fafb; font-weight: 600; }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+        .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+        .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
+        @media (max-width: 768px) { 
+            .sidebar { transform: translateX(-100%); transition: transform 0.3s; } 
+            .sidebar.open { transform: translateX(0); } 
+            .main-content { margin-left: 0; padding: 80px 16px 16px; } 
+            .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+            .mobile-btn { display: block !important; }
+        }
+        .mobile-btn { display: none; position: fixed; top: 16px; left: 16px; z-index: 50; background: #1f2937; color: white; padding: 10px 12px; border-radius: 8px; border: none; cursor: pointer; }
+        .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 35; }
+        .overlay.open { display: block; }
         .text-success { color: #10b981; }
         .text-danger { color: #ef4444; }
         .text-warning { color: #f59e0b; }
-        .text-info { color: #3b82f6; }
-        
-        .mt-1 { margin-top: 4px; }
-        .mt-2 { margin-top: 8px; }
-        .mt-3 { margin-top: 12px; }
-        .mt-4 { margin-top: 16px; }
-        .mb-1 { margin-bottom: 4px; }
-        .mb-2 { margin-bottom: 8px; }
-        .mb-3 { margin-bottom: 12px; }
-        .mb-4 { margin-bottom: 16px; }
-        
         .flex { display: flex; }
         .items-center { align-items: center; }
         .justify-between { justify-content: space-between; }
         .gap-2 { gap: 8px; }
         .gap-3 { gap: 12px; }
-        .gap-4 { gap: 16px; }
-        
-        .grid { display: grid; }
-        .grid-cols-1 { grid-template-columns: repeat(1, 1fr); }
-        .grid-cols-2 { grid-template-columns: repeat(2, 1fr); }
-        .grid-cols-3 { grid-template-columns: repeat(3, 1fr); }
-        .grid-cols-4 { grid-template-columns: repeat(4, 1fr); }
-        
-        @media (min-width: 768px) {
-            .md\:grid-cols-2 { grid-template-columns: repeat(2, 1fr); }
-            .md\:grid-cols-3 { grid-template-columns: repeat(3, 1fr); }
-        }
-        
-        @media (min-width: 1024px) {
-            .lg\:grid-cols-2 { grid-template-columns: repeat(2, 1fr); }
-            .lg\:grid-cols-3 { grid-template-columns: repeat(3, 1fr); }
-            .lg\:grid-cols-4 { grid-template-columns: repeat(4, 1fr); }
-        }
-        
         .w-full { width: 100%; }
-        .text-center { text-align: center; }
+        .mt-2 { margin-top: 8px; }
+        .mt-3 { margin-top: 12px; }
+        .mb-2 { margin-bottom: 8px; }
+        .mb-3 { margin-bottom: 12px; }
         .text-sm { font-size: 13px; }
         .text-xs { font-size: 11px; }
         .font-bold { font-weight: 700; }
         .font-semibold { font-weight: 600; }
+        .text-center { text-align: center; }
     </style>
-    {% block extra_head %}{% endblock %}
 </head>
 <body>
 
 {% if current_user.is_authenticated %}
-<!-- Mobile Menu Button -->
-<button id="menuToggle" class="mobile-menu-btn">
-    <i class="fas fa-bars"></i>
+<button onclick="document.querySelector('.sidebar').classList.toggle('open'); document.querySelector('.overlay').classList.toggle('open');" class="mobile-btn">
+    <i class="fas fa-bars"></i> Menú
 </button>
-<div id="overlay" class="overlay"></div>
+<div onclick="document.querySelector('.sidebar').classList.remove('open'); document.querySelector('.overlay').classList.remove('open');" class="overlay"></div>
 
-<!-- Sidebar -->
-<aside id="sidebar" class="sidebar">
-    <div class="p-6 border-b border-gray-700">
-        <div class="flex items-center gap-3">
-            <div class="w-10 h-10 bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg">
-                <i class="fas fa-dumbbell text-white text-lg"></i>
+<aside class="sidebar">
+    <div style="padding:20px; border-bottom:1px solid #374151;">
+        <h1 style="color:white; font-size:20px; margin:0;">🥊 BoxFit Gym</h1>
+        <p style="color:#9ca3af; font-size:12px; margin:4px 0 0 0;">Sistema de Gestión</p>
+    </div>
+    <div style="padding:16px 20px; border-bottom:1px solid #374151;">
+        <div style="display:flex; align-items:center; gap:12px;">
+            <div style="width:36px; height:36px; background:#4b5563; border-radius:50%; display:flex; align-items:center; justify-content:center;">
+                <i class="fas fa-user text-white text-sm"></i>
             </div>
             <div>
-                <h1 class="text-xl font-bold text-white tracking-tight">BoxFit Gym</h1>
-                <p class="text-gray-400 text-xs">Sistema de Gestión</p>
-            </div>
-        </div>
-    </div>
-    
-    <div class="p-4 mx-3 mt-2 bg-gray-800/50 rounded-xl">
-        <div class="flex items-center gap-3">
-            <div class="w-10 h-10 bg-gray-700 rounded-full flex items-center justify-center">
-                <i class="fas fa-user text-gray-300 text-sm"></i>
-            </div>
-            <div class="flex-1 min-w-0">
-                <p class="text-white text-sm font-medium truncate">{{ current_user.username }}</p>
-                <p class="text-gray-400 text-xs">
-                    {% if current_user.role == 'admin' %}
-                    <i class="fas fa-shield-alt text-blue-400 text-xs mr-1"></i>Administrador
-                    {% else %}
-                    <i class="fas fa-user-check text-green-400 text-xs mr-1"></i>Operador
-                    {% endif %}
+                <p style="color:white; font-weight:500; margin:0;">{{ current_user.username }}</p>
+                <p style="color:#9ca3af; font-size:11px; margin:0;">
+                    {% if current_user.role == 'admin' %}👑 Administrador{% else %}👤 Operador{% endif %}
                 </p>
             </div>
         </div>
     </div>
-    
-    <nav class="px-3 py-4 space-y-1">
-        <a href="{{ url_for('index') }}" class="flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all {% if request.endpoint == 'index' %}bg-gray-700 text-white{% else %}text-gray-300 hover:bg-gray-800 hover:text-white{% endif %}">
-            <i class="fas fa-chart-line w-5"></i>
-            <span>Dashboard</span>
-            {% if request.endpoint == 'index' %}<i class="fas fa-chevron-right ml-auto text-xs"></i>{% endif %}
+    <nav style="padding: 12px 0;">
+        <a href="{{ url_for('index') }}" class="{% if request.endpoint == 'index' %}active{% endif %}">
+            <i class="fas fa-chart-line" style="width:20px; margin-right:12px;"></i> Dashboard
         </a>
-        
-        <a href="{{ url_for('alumnos') }}" class="flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all {% if 'alumno' in request.endpoint %}bg-gray-700 text-white{% else %}text-gray-300 hover:bg-gray-800 hover:text-white{% endif %}">
-            <i class="fas fa-users w-5"></i>
-            <span>Alumnos</span>
-            {% if 'alumno' in request.endpoint %}<i class="fas fa-chevron-right ml-auto text-xs"></i>{% endif %}
+        <a href="{{ url_for('alumnos') }}" class="{% if 'alumno' in request.endpoint %}active{% endif %}">
+            <i class="fas fa-users" style="width:20px; margin-right:12px;"></i> Alumnos
         </a>
-        
-        <a href="{{ url_for('clases') }}" class="flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all {% if request.endpoint == 'clases' %}bg-gray-700 text-white{% else %}text-gray-300 hover:bg-gray-800 hover:text-white{% endif %}">
-            <i class="fas fa-calendar-alt w-5"></i>
-            <span>Clases</span>
-            {% if request.endpoint == 'clases' %}<i class="fas fa-chevron-right ml-auto text-xs"></i>{% endif %}
+        <a href="{{ url_for('clases') }}" class="{% if request.endpoint == 'clases' %}active{% endif %}">
+            <i class="fas fa-calendar-alt" style="width:20px; margin-right:12px;"></i> Clases
         </a>
-        
-        <a href="{{ url_for('ventas') }}" class="flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all {% if request.endpoint == 'ventas' %}bg-gray-700 text-white{% else %}text-gray-300 hover:bg-gray-800 hover:text-white{% endif %}">
-            <i class="fas fa-shopping-cart w-5"></i>
-            <span>Ventas</span>
-            {% if request.endpoint == 'ventas' %}<i class="fas fa-chevron-right ml-auto text-xs"></i>{% endif %}
+        <a href="{{ url_for('ventas') }}" class="{% if request.endpoint == 'ventas' %}active{% endif %}">
+            <i class="fas fa-shopping-cart" style="width:20px; margin-right:12px;"></i> Ventas
         </a>
-        
-        <a href="{{ url_for('productos') }}" class="flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all {% if request.endpoint == 'productos' %}bg-gray-700 text-white{% else %}text-gray-300 hover:bg-gray-800 hover:text-white{% endif %}">
-            <i class="fas fa-tshirt w-5"></i>
-            <span>Productos</span>
-            {% if request.endpoint == 'productos' %}<i class="fas fa-chevron-right ml-auto text-xs"></i>{% endif %}
+        <a href="{{ url_for('productos') }}" class="{% if request.endpoint == 'productos' %}active{% endif %}">
+            <i class="fas fa-tshirt" style="width:20px; margin-right:12px;"></i> Productos
         </a>
-        
         {% if current_user.role == 'admin' %}
-        <a href="{{ url_for('usuarios') }}" class="flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all {% if request.endpoint == 'usuarios' %}bg-gray-700 text-white{% else %}text-gray-300 hover:bg-gray-800 hover:text-white{% endif %}">
-            <i class="fas fa-user-shield w-5"></i>
-            <span>Usuarios</span>
-            {% if request.endpoint == 'usuarios' %}<i class="fas fa-chevron-right ml-auto text-xs"></i>{% endif %}
+        <a href="{{ url_for('usuarios') }}" class="{% if request.endpoint == 'usuarios' %}active{% endif %}">
+            <i class="fas fa-user-shield" style="width:20px; margin-right:12px;"></i> Usuarios
         </a>
-        
-        <a href="{{ url_for('caja') }}" class="flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all {% if request.endpoint == 'caja' %}bg-gray-700 text-white{% else %}text-gray-300 hover:bg-gray-800 hover:text-white{% endif %}">
-            <i class="fas fa-cash-register w-5"></i>
-            <span>Caja</span>
-            {% if request.endpoint == 'caja' %}<i class="fas fa-chevron-right ml-auto text-xs"></i>{% endif %}
-        </a>
-        
-        <a href="{{ url_for('configuracion') }}" class="flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all {% if request.endpoint == 'configuracion' %}bg-gray-700 text-white{% else %}text-gray-300 hover:bg-gray-800 hover:text-white{% endif %}">
-            <i class="fas fa-cog w-5"></i>
-            <span>Configuración</span>
-            {% if request.endpoint == 'configuracion' %}<i class="fas fa-chevron-right ml-auto text-xs"></i>{% endif %}
+        <a href="{{ url_for('caja') }}" class="{% if request.endpoint == 'caja' %}active{% endif %}">
+            <i class="fas fa-cash-register" style="width:20px; margin-right:12px;"></i> Caja
         </a>
         {% endif %}
-        
-        <a href="{{ url_for('reportes') }}" class="flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all {% if request.endpoint == 'reportes' %}bg-gray-700 text-white{% else %}text-gray-300 hover:bg-gray-800 hover:text-white{% endif %}">
-            <i class="fas fa-chart-bar w-5"></i>
-            <span>Reportes</span>
-            {% if request.endpoint == 'reportes' %}<i class="fas fa-chevron-right ml-auto text-xs"></i>{% endif %}
+        <a href="{{ url_for('reportes') }}" class="{% if request.endpoint == 'reportes' %}active{% endif %}">
+            <i class="fas fa-chart-bar" style="width:20px; margin-right:12px;"></i> Reportes
         </a>
-        
-        <div class="border-t border-gray-700 my-4"></div>
-        
-        <a href="{{ url_for('logout') }}" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-red-400 hover:bg-red-900/30 hover:text-red-300 transition-all">
-            <i class="fas fa-sign-out-alt w-5"></i>
-            <span>Cerrar Sesión</span>
+        <div style="border-top:1px solid #374151; margin:12px 20px;"></div>
+        <a href="{{ url_for('logout') }}" style="color:#f87171;">
+            <i class="fas fa-sign-out-alt" style="width:20px; margin-right:12px;"></i> Cerrar Sesión
         </a>
     </nav>
 </aside>
 
 <main class="main-content">
-    <!-- Flash Messages -->
     {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
             {% for category, message in messages %}
-                <div class="alert alert-{{ category }} fade-in">
-                    <i class="fas fa-{% if category == 'success' %}check-circle{% elif category == 'error' %}exclamation-circle{% elif category == 'warning' %}exclamation-triangle{% else %}info-circle{% endif %}"></i>
-                    <span>{{ message }}</span>
-                    <button onclick="this.parentElement.remove()" class="ml-auto hover:opacity-70">&times;</button>
+                <div class="mb-4 p-3 rounded-lg {% if category == 'success' %}bg-green-100 text-green-700 border border-green-200{% elif category == 'error' %}bg-red-100 text-red-700 border border-red-200{% else %}bg-blue-100 text-blue-700 border border-blue-200{% endif %}">
+                    <i class="fas fa-{% if category == 'success' %}check-circle{% elif category == 'error' %}exclamation-circle{% else %}info-circle{% endif %} mr-2"></i>
+                    {{ message }}
                 </div>
             {% endfor %}
         {% endif %}
@@ -693,72 +135,18 @@
     {% block content %}{% endblock %}
 </main>
 
-<button id="themeToggle" class="theme-toggle" title="Cambiar tema">
-    <i class="fas fa-moon"></i>
-</button>
-
 <script>
-    // Mobile menu
-    const menuToggle = document.getElementById('menuToggle');
-    const sidebar = document.getElementById('sidebar');
-    const overlay = document.getElementById('overlay');
-    
-    if (menuToggle) {
-        menuToggle.addEventListener('click', () => {
-            sidebar.classList.toggle('open');
-            overlay.classList.toggle('open');
-            document.body.style.overflow = sidebar.classList.contains('open') ? 'hidden' : '';
-        });
-    }
-    
-    if (overlay) {
-        overlay.addEventListener('click', () => {
-            sidebar.classList.remove('open');
-            overlay.classList.remove('open');
-            document.body.style.overflow = '';
-        });
-    }
-    
-    // Dark mode toggle
-    const themeToggleBtn = document.getElementById('themeToggle');
-    const html = document.documentElement;
-    
-    const savedTheme = localStorage.getItem('theme');
-    if (savedTheme) {
-        html.setAttribute('data-theme', savedTheme);
-        updateThemeIcon(savedTheme);
-    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-        html.setAttribute('data-theme', 'dark');
-        updateThemeIcon('dark');
-    }
-    
-    function updateThemeIcon(theme) {
-        const icon = themeToggleBtn.querySelector('i');
-        if (theme === 'dark') {
-            icon.className = 'fas fa-sun';
-        } else {
-            icon.className = 'fas fa-moon';
-        }
-    }
-    
-    themeToggleBtn.addEventListener('click', () => {
-        const currentTheme = html.getAttribute('data-theme');
-        const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-        html.setAttribute('data-theme', newTheme);
-        localStorage.setItem('theme', newTheme);
-        updateThemeIcon(newTheme);
-    });
-    
-    // Auto-hide flash messages
     setTimeout(() => {
-        document.querySelectorAll('.alert').forEach(alert => {
-            alert.style.opacity = '0';
-            setTimeout(() => alert.remove(), 300);
+        document.querySelectorAll('.alert').forEach(a => {
+            a.style.opacity = '0';
+            setTimeout(() => a.remove(), 300);
         });
-    }, 5000);
+    }, 4000);
 </script>
+
 {% else %}
 {% block auth_content %}{% endblock %}
 {% endif %}
 </body>
 </html>
+EOF
